@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
+import axios from '@/lib/axiosConfig'; // Adjust the path to your axios configuration
 import { AuthResponse, AuthState } from '@/types/auth';
 import { RootState } from '@/lib/store';
 
@@ -26,11 +26,10 @@ export const register = createAsyncThunk(
       );
       
       // Store tokens in localStorage
-      localStorage.setItem('accessToken', response.data.accessToken);
-      localStorage.setItem('refreshToken', response.data.refreshToken);
       
       return response.data;
     } catch (error: unknown) {
+      console.log(error)
       if (axios.isAxiosError(error) && error.response) {
         return rejectWithValue(error.response.data || 'Registration failed');
       }
@@ -42,7 +41,7 @@ export const register = createAsyncThunk(
 export const login = createAsyncThunk(
   'auth/login',
   async (userData: {
-    username: string;
+    loginID: string;
     password: string;
   }, { rejectWithValue }) => {
     try {
@@ -52,11 +51,10 @@ export const login = createAsyncThunk(
       );
       
       // Store tokens in localStorage
-      localStorage.setItem('accessToken', response.data.accessToken);
-      localStorage.setItem('refreshToken', response.data.refreshToken);
-      
+      console.log(response)
       return response.data;
     } catch (error) {
+
       if (axios.isAxiosError(error) && error.response) {
         return rejectWithValue(error.response.data);
       }
@@ -73,8 +71,6 @@ const authSlice = createSlice({
       state.user = null;
       state.accessToken = null;
       state.refreshToken = null;
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
     },
     setTokens: (state, action) => {
       state.accessToken = action.payload.accessToken;
@@ -107,6 +103,7 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(login.rejected, (state, action) => {
+        console.log(state)
         state.loading = false;
         state.error = action.payload as string;
       });

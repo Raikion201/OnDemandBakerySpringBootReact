@@ -15,7 +15,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 const loginSchema = z.object({
-  username: z.string().min(1, "Username or email is required"),
+  loginID: z.string().min(1, "Username or email is required"),
   password: z.string().min(1, "Password is required"),
 });
 
@@ -59,14 +59,14 @@ export function LoginForm({
               <div className="grid gap-2">
                 <Label htmlFor="username">Username/Email</Label>
                 <Input
-                  id="username"
-                  {...register("username")}
+                  id="loginID"
+                  {...register("loginID")}
                   placeholder="Username/Email"
                   disabled={loading}
                 />
-                {errors.username && (
+                {errors.loginID && (
                   <p className="text-sm text-red-500">
-                    {errors.username.message}
+                    {errors.loginID.message}
                   </p>
                 )}
               </div>

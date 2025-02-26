@@ -16,6 +16,7 @@ export default function UsersPage() {
   const dispatch = useAppDispatch();
   const { users, loading, error } = useAppSelector((state) => state.users);
 
+  console.log(users)
   useEffect(() => {
     dispatch(fetchUsers());
   }, [dispatch]);
@@ -27,7 +28,7 @@ export default function UsersPage() {
       </div>
     );
   }
-
+  console.log(error)
   if (error) {
     return <div className="text-red-500 text-center p-4">{error}</div>;
   }

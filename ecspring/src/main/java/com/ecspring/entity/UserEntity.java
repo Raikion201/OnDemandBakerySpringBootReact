@@ -1,12 +1,12 @@
 package com.ecspring.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
@@ -17,7 +17,16 @@ import org.hibernate.annotations.DynamicUpdate;
 @Table(name="users")
 @DynamicInsert
 @DynamicUpdate
+@NoArgsConstructor
+
 public class UserEntity {
+
+
+    public UserEntity(String username,String email,String name){ 
+        this.username = username;
+        this.email = email;
+        this.name = name;
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -42,4 +51,5 @@ public class UserEntity {
             inverseJoinColumns={@JoinColumn(name="ROLE_ID", referencedColumnName="ID")})
     private List<RoleEntity> roles = new ArrayList<>();
 
+    
 }
