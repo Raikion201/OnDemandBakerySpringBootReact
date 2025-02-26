@@ -1,6 +1,6 @@
 package com.ecspring.services.impl;
 
-import com.ecspring.dto.UserDto;
+import com.ecspring.dto.RegisterDto;
 import com.ecspring.entity.RoleEntity;
 import com.ecspring.entity.UserEntity;
 import com.ecspring.repositories.RoleRepository;
@@ -37,7 +37,7 @@ public class UserServiceImpl implements UserService {
         return userRepository.existsByEmail(email);
     }
     @Override
-    public void saveUser(UserDto userDto) {
+    public void saveUser(RegisterDto userDto) {
         UserEntity user = new UserEntity();
         user.setName(userDto.getName());
         user.setUsername(userDto.getUsername());
@@ -66,15 +66,15 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserDto> findAllUsers() {
+    public List<RegisterDto> findAllUsers() {
         List<UserEntity> users = userRepository.findAll();
         return users.stream()
                 .map((user) -> mapToUserDto(user))
                 .collect(Collectors.toList());
     }
 
-    private UserDto mapToUserDto(UserEntity user){
-        UserDto userDto = new UserDto();
+    private RegisterDto mapToUserDto(UserEntity user){
+        RegisterDto userDto = new RegisterDto();
         userDto.setName(user.getName());
         userDto.setUsername(user.getUsername());
         userDto.setEmail(user.getEmail());

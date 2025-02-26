@@ -1,16 +1,16 @@
 package com.ecspring.services;
 
-import com.ecspring.dto.UserDto;
+import com.ecspring.dto.RegisterDto;
 import com.ecspring.entity.UserEntity;
 
 import java.util.List;
 
 public interface UserService {
-    void saveUser(UserDto userDto);
+    void saveUser(RegisterDto userDto);
 
     UserEntity findUserByEmail(String email);
     UserEntity findUserByUsername(String username);
-    List<UserDto> findAllUsers();
+    List<RegisterDto> findAllUsers();
     boolean checkUsernameExists(String username);
     boolean checkEmailExists(String email);
 }

@@ -8,6 +8,9 @@ import java.util.stream.Collectors;
 
 import com.ecspring.entity.UserEntity;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -15,7 +18,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-@Data
+@Getter
+@Setter
 public class UserDetailsImpl implements UserDetails {
     @Serial
     private static final long serialVersionUID = 1L;
@@ -56,6 +60,8 @@ public class UserDetailsImpl implements UserDetails {
                 user.getPassword(),
                 authorities);
     }
+
+    
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

@@ -1,6 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
-
 interface User {
   username: string;
   email: string;
@@ -24,7 +23,6 @@ export const fetchUsers = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get('http://localhost:8080/api/user/list');
-      console.log(response.data.users);
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
