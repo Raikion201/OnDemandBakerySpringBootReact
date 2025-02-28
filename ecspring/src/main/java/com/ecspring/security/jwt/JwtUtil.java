@@ -127,8 +127,8 @@ public class JwtUtil {
         accessCookie.setMaxAge((int) (jwtAccessExpirationMs / 1000));
         response.addCookie(accessCookie);
 
-        // If a refresh token is provided, add its cookie; otherwise, skip adding it.
-        if (refreshToken != null && !refreshToken.isEmpty()) {
+        // Set refresh token to "" means remove the refresh token
+        if (refreshToken != null) {
             Cookie refreshCookie = new Cookie("refreshToken", refreshToken);
             refreshCookie.setHttpOnly(true);
             refreshCookie.setPath("/");

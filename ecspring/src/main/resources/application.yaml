@@ -17,7 +17,7 @@ spring:
 jwt:
   secret: "Hs1rno/+4+mIyo4gkk49ymga6UOGG4FTYpo13KSxH20="
   expiration:
-    access: 900000        
+    access: 500000
     refresh: 604800000
 logging:
   level:

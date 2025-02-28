@@ -23,10 +23,15 @@ export const fetchUsers = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get('http://localhost:8080/api/user/list');
+      console.log(response)
+      if(response.data == ""){
+        return rejectWithValue('Failed to fetch users');
+      }
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        return rejectWithValue(error.response?.data ?? 'Failed to fetch users');
+        console.log(error)
+        return rejectWithValue(error.message ?? 'Failed to fetch users');
       }
       return rejectWithValue('Failed to fetch users');
     }

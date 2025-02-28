@@ -27,19 +27,21 @@ public class AuthTokenFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-            try {
-                String jwt = jwtUtil.parseAccessJwtFromCookie(request);
-                if (jwt != null && jwtUtil.validateJwtToken(jwt)) {
+        try {
+            String jwt = jwtUtil.parseAccessJwtFromCookie(request);
+            String jwta = jwtUtil.parseRefreshJwtFromCookie(request);
+            System.out.println(jwta);
+            if (jwt != null ) {
+                if (jwtUtil.validateJwtToken(jwt) && !jwtUtil.isTokenExpired(jwt)) {
                     UsernamePasswordAuthenticationToken authentication = jwtUtil.getAuthenticationFromJwt(jwt);
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
-
-                }
-            } catch (Exception e) {
-                logger.error("Cannot set user authentication: {}", e);
+                } 
             }
-
-            filterChain.doFilter(request, response);
-
+        } catch (Exception e) {
+            logger.error("Cannot set user authentication: {}", e);
         }
+
+        filterChain.doFilter(request, response);
     }
+}
