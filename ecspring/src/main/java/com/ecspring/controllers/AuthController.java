@@ -60,9 +60,14 @@ public class AuthController {
                 // Save the new user
                 userService.saveUser(registerDto);
 
-                Authentication authentication = authenticationManager.authenticate(
-                                new UsernamePasswordAuthenticationToken(registerDto.getUsername(),
-                                                registerDto.getPassword()));
+                Authentication authentication = null;
+                try {
+                        authentication = authenticationManager.authenticate(
+                                        new UsernamePasswordAuthenticationToken(registerDto.getUsername(),
+                                        registerDto.getPassword()));
+                } catch (org.springframework.security.core.AuthenticationException ex) {
+                        log.error("Authentication error: {}", ex.getMessage());
+                }
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
                 // Generate tokens using the email as identifier
@@ -101,36 +106,32 @@ public class AuthController {
                 try {
                         // Parse refresh token from request cookies
                         String refreshToken = jwtUtil.parseRefreshJwtFromCookie(request);
-
-                        if (refreshToken == null) {
-                                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("No refresh token");
+                        if(refreshToken == null || !jwtUtil.validateJwtToken(refreshToken) || jwtUtil.isTokenExpired(refreshToken)){
+                                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Refresh token is expired");
                         }
-
-                        // Validate refresh token
-                        if (!jwtUtil.validateJwtToken(refreshToken)) {
-                                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Refresh token invalid");
-                        }
-                        //
-                        // // Extract user details from refresh token and create new authentication
+                        // Extract username or email from refresh token
                         String username = jwtUtil.getUsernameFromToken(refreshToken);
-                        if (username.isEmpty()) {
+                        if (username == null || username.isEmpty()) {
                                 username = jwtUtil.getEmailFromToken(refreshToken);
                         }
-                        //
-                        // Load user details
+                        
+                        // Load full user details with authorities from the database
                         UserDetailsImpl userDetails = (UserDetailsImpl) UserDetailsService.loadUserByUsername(username);
 
-                        // Create new authentication object
-                        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                        // Create new authentication object with proper authorities
+                        Authentication authentication = new UsernamePasswordAuthenticationToken(
                                         userDetails, null, userDetails.getAuthorities());
 
                         // Set authentication in context
                         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                        // Generate new tokens
+                        // Generate new token pair
                         jwtUtil.generateAndSetJwtTokens(response, authentication);
-                        return ResponseEntity.ok().build();
-
+                        
+                        // Return user info with the response
+                        return ResponseEntity.ok(
+                            new AuthResponseDto(userDetails.getName(), userDetails.getUsername(), userDetails.getEmail())
+                        );
                 } catch (Exception e) {
                         log.error("Failed to refresh token: {}", e.getMessage());
                         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Failed to refresh token");

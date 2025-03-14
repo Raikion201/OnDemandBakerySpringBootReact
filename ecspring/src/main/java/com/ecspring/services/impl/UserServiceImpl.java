@@ -1,13 +1,16 @@
 package com.ecspring.services.impl;
 
+
 import com.ecspring.dto.RegisterDto;
 import com.ecspring.entity.RoleEntity;
 import com.ecspring.entity.UserEntity;
 import com.ecspring.repositories.RoleRepository;
 import com.ecspring.repositories.UserRepository;
 import com.ecspring.services.UserService;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.List;
@@ -21,8 +24,8 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
 
     public UserServiceImpl(UserRepository userRepository,
-                           RoleRepository roleRepository,
-                           PasswordEncoder passwordEncoder) {
+            RoleRepository roleRepository,
+            PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
@@ -36,6 +39,10 @@ public class UserServiceImpl implements UserService {
     public boolean checkEmailExists(String email) {
         return userRepository.existsByEmail(email);
     }
+
+
+
+    @Transactional
     @Override
     public void saveUser(RegisterDto userDto) {
         UserEntity user = new UserEntity();
@@ -73,13 +80,11 @@ public class UserServiceImpl implements UserService {
                 .collect(Collectors.toList());
     }
 
-    private RegisterDto mapToUserDto(UserEntity user){
+    private RegisterDto mapToUserDto(UserEntity user) {
         RegisterDto userDto = new RegisterDto();
         userDto.setName(user.getName());
         userDto.setUsername(user.getUsername());
         userDto.setEmail(user.getEmail());
         return userDto;
     }
-
-
 }

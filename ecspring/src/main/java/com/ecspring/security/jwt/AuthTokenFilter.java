@@ -28,15 +28,11 @@ public class AuthTokenFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         try {
-            String jwt = jwtUtil.parseAccessJwtFromCookie(request);
-            String jwta = jwtUtil.parseRefreshJwtFromCookie(request);
-            System.out.println(jwta);
-            if (jwt != null ) {
-                if (jwtUtil.validateJwtToken(jwt) && !jwtUtil.isTokenExpired(jwt)) {
-                    UsernamePasswordAuthenticationToken authentication = jwtUtil.getAuthenticationFromJwt(jwt);
+            String jwta = jwtUtil.parseAccessJwtFromCookie(request);
+            if (jwta != null && jwtUtil.validateJwtToken(jwta) && !jwtUtil.isTokenExpired(jwta) ) {
+                    UsernamePasswordAuthenticationToken authentication = jwtUtil.getAuthenticationFromJwt(jwta);
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
-                } 
             }
         } catch (Exception e) {
             logger.error("Cannot set user authentication: {}", e);
