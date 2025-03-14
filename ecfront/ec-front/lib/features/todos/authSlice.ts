@@ -5,8 +5,6 @@ import { RootState } from '@/lib/store';
 
 const initialState: AuthState = {
   user: null,
-  accessToken: null,
-  refreshToken: null,
   loading: false,
   error: null
 };
@@ -23,10 +21,7 @@ export const register = createAsyncThunk(
       const response = await axios.post<AuthResponse>(
         'http://localhost:8080/api/auth/register',
         userData
-      );
-      
-      // Store tokens in localStorage
-      
+      );      
       return response.data;
     } catch (error: unknown) {
       console.log(error)
@@ -69,12 +64,6 @@ const authSlice = createSlice({
   reducers: {
     logout: (state) => {
       state.user = null;
-      state.accessToken = null;
-      state.refreshToken = null;
-    },
-    setTokens: (state, action) => {
-      state.accessToken = action.payload.accessToken;
-      state.refreshToken = action.payload.refreshToken;
     }
   },
   extraReducers: (builder) => {
@@ -83,10 +72,8 @@ const authSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(register.fulfilled, (state, action) => {
+      .addCase(register.fulfilled, (state) => {
         state.loading = false;
-        state.accessToken = action.payload.accessToken;
-        state.refreshToken = action.payload.refreshToken;
       })
       .addCase(register.rejected, (state, action) => {
         state.loading = false;
@@ -96,10 +83,8 @@ const authSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(login.fulfilled, (state, action) => {
+      .addCase(login.fulfilled, (state) => {
         state.loading = false;
-        state.accessToken = action.payload.accessToken;
-        state.refreshToken = action.payload.refreshToken;
         state.error = null;
       })
       .addCase(login.rejected, (state, action) => {
@@ -110,9 +95,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, setTokens } = authSlice.actions;
+export const { logout } = authSlice.actions;
 export const selectCurrentUser = (state: RootState) => state.auth.user;
-export const selectCurrentToken = (state: RootState) => state.auth.accessToken;
-export const selectIsAuthenticated = (state: RootState) => !!state.auth.accessToken;
 
 export default authSlice.reducer;

@@ -3,6 +3,7 @@ package com.ecspring.services;
 import com.ecspring.dto.RegisterDto;
 import com.ecspring.entity.UserEntity;
 
+
 import java.util.List;
 
 public interface UserService {
@@ -13,4 +14,5 @@ public interface UserService {
     List<RegisterDto> findAllUsers();
     boolean checkUsernameExists(String username);
     boolean checkEmailExists(String email);
+   
 }

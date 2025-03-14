@@ -7,7 +7,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.ecspring.entity.UserEntity;
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
