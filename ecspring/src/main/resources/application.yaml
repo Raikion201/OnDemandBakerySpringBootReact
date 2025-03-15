@@ -18,8 +18,7 @@ spring:
       client:
         registration:
          google:
-          client-id: 480765217721-bs1l6q4tiab92gvk044uhc7qv1nh0v1d.apps.googleusercontent.com
-          client-secret: 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
+
           scope: email,profile
           redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
 jwt:
