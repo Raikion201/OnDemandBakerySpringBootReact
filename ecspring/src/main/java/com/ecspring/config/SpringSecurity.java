@@ -29,7 +29,6 @@ import jakarta.servlet.http.HttpServletResponse;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-
 public class SpringSecurity {
 
     @Autowired
@@ -71,11 +70,10 @@ public class SpringSecurity {
         http.cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // This is the key change - return 401 status instead of redirecting
                 .exceptionHandling(exceptionHandling -> exceptionHandling
-                        // For unauthenticated requests (no/invalid JWT) - 401 Unauthorized
+                        // Trả về 401 cho các yêu cầu không xác thực
                         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
-                        // For authenticated but unauthorized requests - 403 Forbidden
+                        // Trả về 403 cho các yêu cầu không được phép
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
                             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                             response.setContentType("application/json");
@@ -83,22 +81,22 @@ public class SpringSecurity {
                                     accessDeniedException.getMessage() + "\"}");
                         }))
                 .authorizeHttpRequests(authorize -> authorize
-                        // Add more specific patterns first
+                        // Cho phép truy cập không cần xác thực vào các endpoint sau
                         .requestMatchers("/oauth2/authorization/**").permitAll()
                         .requestMatchers("/login/oauth2/code/**").permitAll()
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .anyRequest().authenticated())
-                // Configure OAuth2 login with specific paths
+                        .requestMatchers("/api/auth/forgot-password").permitAll()
+                        .requestMatchers("/api/auth/reset-password").permitAll()
+                        .anyRequest().authenticated()) // Các endpoint khác yêu cầu xác thực
                 .oauth2Login(oauth2 -> oauth2
                         .authorizationEndpoint(authEndpoint -> authEndpoint.baseUri("/oauth2/authorization"))
                         .redirectionEndpoint(redirectEndpoint -> redirectEndpoint.baseUri("/login/oauth2/code/*"))
                         .userInfoEndpoint(userInfo -> userInfo.userService(oAuth2UserService))
                         .successHandler(oAuth2AuthenticationSuccessHandler));
 
-        // Add authentication provider
+        // Thêm authentication provider
         http.authenticationProvider(DaoAuthenticationProvider());
 
-        // Add JWT filter before authentication filter
+        // Thêm JWT filter trước authentication filter
         http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

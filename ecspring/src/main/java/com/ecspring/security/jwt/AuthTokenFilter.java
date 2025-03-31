@@ -19,8 +19,6 @@ public class AuthTokenFilter extends OncePerRequestFilter {
     @Autowired
     private JwtUtil jwtUtil;
 
-    @Autowired
-
     private static final Logger logger = LoggerFactory.getLogger(AuthTokenFilter.class);
 
     @Override
@@ -29,10 +27,10 @@ public class AuthTokenFilter extends OncePerRequestFilter {
 
         try {
             String jwta = jwtUtil.parseAccessJwtFromCookie(request);
-            if (jwta != null && jwtUtil.validateJwtToken(jwta) && !jwtUtil.isTokenExpired(jwta) ) {
-                    UsernamePasswordAuthenticationToken authentication = jwtUtil.getAuthenticationFromJwt(jwta);
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
+            if (jwta != null && jwtUtil.validateJwtToken(jwta) && !jwtUtil.isTokenExpired(jwta)) {
+                UsernamePasswordAuthenticationToken authentication = jwtUtil.getAuthenticationFromJwt(jwta);
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         } catch (Exception e) {
             logger.error("Cannot set user authentication: {}", e);
