@@ -1,8 +1,10 @@
 "use client";
+
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import axios from "@/lib/axiosConfig"; // Import Axios configuration
 
 export const ForgotPasswordForm = () => {
     const [email, setEmail] = useState('');
@@ -13,23 +15,16 @@ export const ForgotPasswordForm = () => {
         setIsLoading(true);
 
         try {
-            const response = await fetch('api/auth/forgot-password', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email }),
-            });
+            const response = await axios.post('/api/auth/forgot-password', { email });
 
-            if (response.ok) {
-                toast.success('Reset password link has been sent to your email');
-                setEmail('');
-            } else {
-                const error = await response.json();
-                toast.error(error.message || 'Something went wrong');
-            }
+            toast.success('Reset password link has been sent to your email');
+            setEmail('');
         } catch (error) {
-            toast.error('Failed to send reset password email');
+            if (axios.isAxiosError(error) && error.response) {
+                toast.error(error.response.data.message || 'Something went wrong');
+            } else {
+                toast.error('Failed to send reset password email');
+            }
         } finally {
             setIsLoading(false);
         }

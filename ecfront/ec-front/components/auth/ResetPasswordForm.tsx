@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import axios from "@/lib/axiosConfig"; // Import Axios configuration
 
 export const ResetPasswordForm = () => {
     const searchParams = useSearchParams();
@@ -24,27 +25,20 @@ export const ResetPasswordForm = () => {
         setIsLoading(true);
 
         try {
-            const response = await fetch('/api/auth/reset-password', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    token,
-                    newPassword,
-                }),
+            const response = await axios.post('/api/auth/reset-password', {
+                token,
+                newPassword,
             });
 
-            if (response.ok) {
-                toast.success('Password has been reset successfully');
-                // Redirect to login page
-                window.location.href = '/login';
-            } else {
-                const error = await response.json();
-                toast.error(error.message || 'Failed to reset password');
-            }
+            toast.success('Password has been reset successfully');
+            // Redirect to login page
+            window.location.href = '/login';
         } catch (error) {
-            toast.error('Something went wrong');
+            if (axios.isAxiosError(error) && error.response) {
+                toast.error(error.response.data.message || 'Failed to reset password');
+            } else {
+                toast.error('Something went wrong');
+            }
         } finally {
             setIsLoading(false);
         }
