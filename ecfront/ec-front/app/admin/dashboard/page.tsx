@@ -19,7 +19,7 @@ export default function AdminDashboard() {
       toast.success("Logged out successfully");
       router.push("/admin/login");
     } catch (error) {
-      toast.error("Failed to logout");
+      toast.error("Failed to logout :" + error);
     }
   };
 
@@ -38,6 +38,9 @@ export default function AdminDashboard() {
           <div className="space-x-4">
             <Button variant="outline" onClick={() => router.push("/admin/users")}>
               Manage Users
+            </Button>
+            <Button variant="outline" onClick={() => router.push("/admin/products")}>
+              Manage Products
             </Button>
             <Button onClick={() => router.push("/admin/users/create")}>
               Create User
@@ -96,7 +99,20 @@ export default function AdminDashboard() {
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button className="w-full justify-start" variant="outline">Add New Product</Button>
+              <Button 
+                className="w-full justify-start" 
+                variant="outline"
+                onClick={() => router.push("/admin/products/create")}
+              >
+                Add New Product
+              </Button>
+              <Button 
+                className="w-full justify-start" 
+                variant="outline"
+                onClick={() => router.push("/admin/products")}
+              >
+                Manage Products
+              </Button>
               <Button className="w-full justify-start" variant="outline">View Orders</Button>
               <Button className="w-full justify-start" variant="outline">System Settings</Button>
             </CardContent>
