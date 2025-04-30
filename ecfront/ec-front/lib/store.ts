@@ -1,18 +1,22 @@
-import { configureStore } from '@reduxjs/toolkit'
-import  authSlice  from '@/lib/features/todos/authSlice'
-import userSlice from '@/lib/features/todos/userSlice'
+import { configureStore } from '@reduxjs/toolkit';
+import authReducer from './features/todos/authSlice';
+import userReducer from './features/todos/userSlice';
+import adminAuthReducer from './features/admin/adminAuthSlice';
 
-export const makeStore = () => {
+// This function creates and returns the store
+export function makeStore() {
   return configureStore({
     reducer: {
-      auth: authSlice,
-      users: userSlice
-    }
-  })
+      auth: authReducer,
+      user: userReducer,
+      adminAuth: adminAuthReducer,
+    },
+  });
 }
 
-// Infer the type of makeStore
-export type AppStore = ReturnType<typeof makeStore>
-// Infer the `RootState` and `AppDispatch` types from the store itself
-export type RootState = ReturnType<AppStore['getState']>
-export type AppDispatch = AppStore['dispatch']
+// Create the store
+export const store = makeStore();
+
+export type AppStore = ReturnType<typeof makeStore>;
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;

@@ -19,7 +19,7 @@ import { toast } from 'sonner';
 export default function UsersPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const { users, loading, error } = useAppSelector((state) => state.users);
+  const { users, loading, error } = useAppSelector((state) => state.user);
 
   useEffect(() => {
     dispatch(fetchUsers());
