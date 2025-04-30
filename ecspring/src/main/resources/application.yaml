@@ -1,8 +1,8 @@
 spring:
   datasource:
     url: jdbc:mysql://localhost:3306/ec
-    username: root
-    password: duong
+    username: yourusername
+    password: yourpassword
   jpa:
     database: mysql
     show-sql: true
