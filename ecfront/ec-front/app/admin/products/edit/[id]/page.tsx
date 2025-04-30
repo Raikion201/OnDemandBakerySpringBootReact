@@ -38,6 +38,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const { product, loading, error } = useAppSelector((state) => state.products);
   const [submitting, setSubmitting] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   
   const {
     register,
@@ -103,9 +104,14 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const handleImageUploaded = (url: string, file?: File) => {
     setValue("imageUrl", url);
     
-    // Only set preview image for data URLs (newly selected images)
-    if (url.startsWith('data:')) {
-      setPreviewImage(url);
+    if (file) {
+      setImageFile(file);
+      // Create a preview from the file
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreviewImage(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -238,11 +244,10 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                   {(imageUrl || previewImage) && (
                     <div className="mt-2 border rounded-md p-2">
                       <img 
-                        // Use preview image for newly uploaded images, otherwise try to load from backend
                         src={previewImage || 
                           (imageUrl?.startsWith('data:') 
                             ? imageUrl 
-                            : `http://localhost:8080${imageUrl}`)}
+                            : `http://localhost:8080${imageUrl?.startsWith('/') ? imageUrl : '/' + imageUrl}`)}
                         alt="Product image" 
                         className="h-40 object-contain mx-auto"
                         onError={(e) => {

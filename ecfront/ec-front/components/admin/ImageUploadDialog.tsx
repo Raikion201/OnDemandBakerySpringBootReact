@@ -70,14 +70,13 @@ export function ImageUploadDialog({ productId, onImageUploaded, disabled = false
           toast.error("Image uploaded but URL not returned correctly");
         } else {
           toast.success("Image uploaded successfully");
-          // Check if imageUrl already has the server URL prefix
-          const fullImageUrl = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
-          onImageUploaded(fullImageUrl, file);
+          // Pass both the URL and the file to parent component
+          onImageUploaded(imageUrl, file);
         }
       } else {
-        // If no productId, just provide the preview data URL to parent component
+        // If no productId, just provide the preview data URL and file to parent component
         toast.success("Image selected successfully");
-        onImageUploaded(preview || "", file); // preview is already a data URL
+        onImageUploaded(preview || "", file);
       }
       
       setIsOpen(false);

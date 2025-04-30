@@ -7,7 +7,7 @@ import * as z from "zod";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAppDispatch } from "@/lib/hooks";
-import { createProduct } from "@/lib/features/products/productSlice";
+import { createProduct,updateProduct } from "@/lib/features/products/productSlice";
 import { AdminRoute } from "@/components/admin/AdminRoute";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -59,56 +59,99 @@ export default function CreateProductPage() {
 
   const handleImageUploaded = (url: string, file?: File) => {
     setValue("imageUrl", url);
+    
     if (file) {
       setSelectedFile(file);
-    }
-    
-    // Store the preview URL for display
-    if (url.startsWith('data:')) {
-      setPreviewImage(url);
+      // If we have a file, create a local preview using FileReader
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreviewImage(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else if (url) {
+      // If we have a URL but no file, it might be a server URL
+      setPreviewImage(null); // Clear any existing preview
     }
   };
 
   const onSubmit = async (data: ProductFormValues) => {
     setLoading(true);
     try {
-      const result = await dispatch(createProduct({
-        name: data.name,
-        description: data.description || "",
-        price: data.price,
-        quantity: data.quantity
-      })).unwrap();
-      
-      setProductId(result.id);
-      
-      // If we have a selected file and a product ID, upload the image
-      if (selectedFile && result.id) {
-        const formData = new FormData();
-        formData.append("file", selectedFile);
+      // If productId exists, update the product instead of creating a new one
+      if (productId) {
+        await dispatch(updateProduct({
+          id: productId,
+          productData: {
+            name: data.name,
+            description: data.description || "",
+            price: data.price,
+            quantity: data.quantity
+          }
+        })).unwrap();
         
-        try {
-          const imageResponse = await axios.post(`/api/products/${result.id}/image`, formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data'
-            }
-          });
+        // If we have a selected file, upload the image
+        if (selectedFile) {
+          const formData = new FormData();
+          formData.append("file", selectedFile);
           
-          // Get the correct image URL from the response
-          const imageUrl = imageResponse.data.imageUrl;
-          setValue("imageUrl", imageUrl);
-          
-          // Don't change the preview image - keep showing the same preview
-          // as we're not going to try loading from backend immediately
-          console.log("Image uploaded, URL:", imageUrl);
-        } catch (imageError) {
-          console.error("Failed to upload image:", imageError);
-          toast.error("Product created but image upload failed");
+          try {
+            const imageResponse = await axios.post(`/api/products/${productId}/image`, formData, {
+              headers: {
+                'Content-Type': 'multipart/form-data'
+              }
+            });
+            
+            // Get the correct image URL from the response
+            const imageUrl = imageResponse.data.imageUrl;
+            setValue("imageUrl", imageUrl);
+            
+            console.log("Image uploaded, URL:", imageUrl);
+          } catch (imageError) {
+            console.error("Failed to upload image:", imageError);
+            toast.error("Product updated but image upload failed");
+          }
         }
+        
+        toast.success("Product updated successfully");
+      } 
+      // Create new product if productId doesn't exist
+      else {
+        const result = await dispatch(createProduct({
+          name: data.name,
+          description: data.description || "",
+          price: data.price,
+          quantity: data.quantity
+        })).unwrap();
+        
+        setProductId(result.id);
+        
+        // If we have a selected file and a product ID, upload the image
+        if (selectedFile && result.id) {
+          const formData = new FormData();
+          formData.append("file", selectedFile);
+          
+          try {
+            const imageResponse = await axios.post(`/api/products/${result.id}/image`, formData, {
+              headers: {
+                'Content-Type': 'multipart/form-data'
+              }
+            });
+            
+            // Get the correct image URL from the response
+            const imageUrl = imageResponse.data.imageUrl;
+            setValue("imageUrl", imageUrl);
+            
+            console.log("Image uploaded, URL:", imageUrl);
+          } catch (imageError) {
+            console.error("Failed to upload image:", imageError);
+            toast.error("Product created but image upload failed");
+          }
+        }
+        
+        toast.success("Product created successfully");
       }
-      
-      toast.success("Product created successfully");
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : "Failed to create product");
+      toast.error(typeof error === 'string' ? error : productId ? "Failed to update product" : "Failed to create product");
     } finally {
       setLoading(false);
     }
@@ -203,7 +246,7 @@ export default function CreateProductPage() {
                     <ImageUploadDialog 
                       productId={productId} 
                       onImageUploaded={handleImageUploaded}
-                      disabled={false}
+                      disabled={loading}
                     />
                     {imageUrl && (
                       <div className="text-sm text-muted-foreground">
@@ -214,7 +257,12 @@ export default function CreateProductPage() {
                   {(imageUrl || previewImage) && (
                     <div className="mt-2 border rounded-md p-2">
                       <img 
-                        src={previewImage || imageUrl}
+                        src={previewImage || 
+                          (imageUrl && imageUrl.startsWith('data:') 
+                            ? imageUrl 
+                            : imageUrl 
+                              ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${imageUrl.startsWith('/') ? imageUrl : '/' + imageUrl}`
+                              : '')}
                         alt="Product image" 
                         className="h-40 object-contain mx-auto"
                         onError={(e) => {
