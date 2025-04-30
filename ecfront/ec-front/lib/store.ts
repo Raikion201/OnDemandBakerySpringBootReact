@@ -1,18 +1,20 @@
 import { configureStore } from '@reduxjs/toolkit';
+// Import your existing reducers
 import authReducer from './features/todos/authSlice';
 import userReducer from './features/todos/userSlice';
 import adminAuthReducer from './features/admin/adminAuthSlice';
+import productReducer from './features/products/productSlice';
 
-// This function creates and returns the store
-export function makeStore() {
+export const makeStore = () => {
   return configureStore({
     reducer: {
       auth: authReducer,
       user: userReducer,
       adminAuth: adminAuthReducer,
+      products: productReducer,
     },
   });
-}
+};
 
 // Create the store
 export const store = makeStore();
