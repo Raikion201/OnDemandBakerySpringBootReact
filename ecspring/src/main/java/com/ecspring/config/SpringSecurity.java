@@ -89,6 +89,9 @@ public class SpringSecurity {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/admin/login").permitAll()
                         .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "STAFF", "OWNER")
+                        .requestMatchers("/api/auth/forgot-password").permitAll()
+                        .requestMatchers("/api/auth/validate-reset-token").permitAll()
+                        .requestMatchers("/api/auth/reset-password").permitAll()
                         .anyRequest().authenticated())
                 // Configure OAuth2 login with specific paths
                 .oauth2Login(oauth2 -> oauth2

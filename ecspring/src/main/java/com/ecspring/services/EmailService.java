@@ -1,0 +1,1 @@
+package com.ecspring.services;import jakarta.mail.MessagingException;public interface EmailService {    void sendPasswordResetEmail(String to, String token) throws MessagingException;}
