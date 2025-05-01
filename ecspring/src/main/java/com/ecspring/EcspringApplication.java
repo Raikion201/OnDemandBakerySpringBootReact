@@ -23,7 +23,7 @@ public class EcspringApplication {
             if (!uploadDir.exists()) {
                 uploadDir.mkdirs();
             }
-            
+
             // Initialize the storage service
             storageService.init();
         };
