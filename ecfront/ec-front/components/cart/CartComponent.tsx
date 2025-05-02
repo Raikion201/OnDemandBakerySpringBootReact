@@ -32,7 +32,6 @@ interface CartComponentProps {
 }
 
 export function CartComponent({ variant = 'icon' }: CartComponentProps) {
-  const router = useRouter();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   
   // Calculate total and item count
