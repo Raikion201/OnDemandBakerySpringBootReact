@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart } from "lucide-react";
+import { CartComponent } from "@/components/cart/CartComponent";
 
 export function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className=" flex h-16 px-32  justify-between w-full">
-        <div className="flex items-center gap-6 ">
+      <div className="flex h-16 px-32 justify-between w-full">
+        <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center space-x-2">
             <div className="text-2xl font-bold">BakeDelights</div>
           </Link>
@@ -47,12 +47,7 @@ export function Navbar() {
                 </svg>
               </Button>
             </Link>
-            <Link href="/cart">
-              <Button variant="ghost" size="icon">
-                <span className="sr-only">Shopping Cart</span>
-                <ShoppingCart className="h-4 w-4" />
-              </Button>
-            </Link>
+            <CartComponent variant="icon" />
           </div>
           <Link href="/login">
             <Button variant="outline" size="sm">
