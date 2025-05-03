@@ -41,7 +41,7 @@ export function ProductCard({ product }: ProductCardProps) {
                             src={
                                 product.imageUrl.startsWith("http")
                                     ? product.imageUrl
-                                    : `http://localhost:8080${product.imageUrl}`
+                                    : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${product.imageUrl}`
                             }
                             alt={product.name}
                             className="h-full w-full object-cover"

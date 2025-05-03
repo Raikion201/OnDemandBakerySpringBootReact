@@ -1,9 +1,33 @@
 "use client"
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { CartComponent } from "@/components/cart/CartComponent";
+import { useAppSelector } from "@/lib/hooks";
+import axios from "@/lib/axiosConfig";
 
 export function Navbar() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const user = useAppSelector((state) => state.auth.user);
+
+  const handleAuthNav = (path: string) => {
+    if (!['/login','/sign-up'].includes(pathname)) {
+      localStorage.setItem("previousUrl", pathname);
+    }
+    router.push(path);
+  };
+
+  // add logout handler
+  const handleLogout = async () => {
+    try {
+      await axios.post("/api/auth/logout");
+      router.push("/login");
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 px-32 justify-between w-full">
@@ -50,14 +74,33 @@ export function Navbar() {
             </Link>
             <CartComponent variant="icon" />
           </div>
-          <Link href="/login">
-            <Button variant="outline" size="sm">
-              Login
-            </Button>
-          </Link>
-          <Link href="/sign-up">
-            <Button size="sm">Sign Up</Button>
-          </Link>
+          <div className="flex items-center gap-4">
+            { user ? (
+              <div className="relative inline-block group">
+                <span className="cursor-pointer">Welcome, {user.name || user.username}</span>
+                <div className="absolute left-0 mt-2 w-48 bg-card text-card-foreground border rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                  <a href="#" className="block px-4 py-2 hover:bg-muted/50">Manage Account</a>
+                  <a href="#" className="block px-4 py-2 hover:bg-muted/50">Manage Orders</a>
+                  {/* replace link with button to invoke logout */}
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-4 py-2 hover:bg-muted/50"
+                  >
+                    Log Out
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <Button variant="ghost" onClick={() => handleAuthNav("/login")}>
+                  Login
+                </Button>
+                <Button onClick={() => handleAuthNav("/sign-up")}>
+                  Sign Up
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </header>

@@ -41,8 +41,9 @@ export function LoginForm({
   const onSubmit = async (data: LoginFormValues) => {
     try {
       await dispatch(login(data)).unwrap();
-      toast.success("Logged in successfully!");
-      router.push("/user");
+      const dest = localStorage.getItem("previousUrl") || "/";
+      localStorage.removeItem("previousUrl");
+      router.push(dest);
     } catch (errorrr) {
       toast.error(typeof errorrr === "string" ? errorrr : "Login failed");
     }
