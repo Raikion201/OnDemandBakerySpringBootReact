@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { fetchProductById } from "@/lib/features/products/productSlice";
+import { addItemToCart } from "@/lib/features/cart/cartSlice";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -26,8 +27,18 @@ export default function ProductDetailPage() {
     }, [dispatch, id]);
 
     const handleAddToCart = () => {
-        // Add to cart logic here
-        toast.success(`Added ${quantity} ${product?.name} to cart`);
+        if (product) {
+            dispatch(addItemToCart({
+                productId: product.id,
+                quantity: quantity,
+                productDetails: {
+                    name: product.name,
+                    price: product.price,
+                    imageUrl: product.imageUrl
+                }
+            }));
+            toast.success(`Added ${quantity} ${product.name} to cart`);
+        }
     };
 
     const decreaseQuantity = () => {

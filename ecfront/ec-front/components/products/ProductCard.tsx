@@ -5,22 +5,46 @@ import { Button } from "@/components/ui/button";
 import { Star, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { Product } from "@/lib/features/products/productSlice";
+import { useAppDispatch } from "@/lib/hooks";
+import { addItemToCart } from "@/lib/features/cart/cartSlice";
+import { toast } from "sonner";
 
 interface ProductCardProps {
     product: Product;
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-    console.log("Rendering ProductCard for:", product.quantity,product.name);
+    const dispatch = useAppDispatch();
+
+    const handleAddToCart = (e: React.MouseEvent) => {
+        e.preventDefault(); // Prevent navigating to detail page
+
+        dispatch(
+            addItemToCart({
+                productId: product.id,
+                quantity: 1,
+                productDetails: {
+                    name: product.name,
+                    price: product.price,
+                    imageUrl: product.imageUrl,
+                },
+            })
+        );
+
+        toast.success(`Added ${product.name} to cart`);
+    };
+
     return (
         <Link href={`/products/${product.id}`}>
             <Card className="overflow-hidden transition-all hover:shadow-lg h-full">
                 <div className="aspect-square relative bg-muted">
                     {product.imageUrl ? (
                         <img
-                            src={product.imageUrl.startsWith('http')
-                                ? product.imageUrl
-                                : `http://localhost:8080${product.imageUrl}`}
+                            src={
+                                product.imageUrl.startsWith("http")
+                                    ? product.imageUrl
+                                    : `http://localhost:8080${product.imageUrl}`
+                            }
                             alt={product.name}
                             className="h-full w-full object-cover"
                             onError={(e) => {
@@ -28,7 +52,8 @@ export function ProductCard({ product }: ProductCardProps) {
                                 (e.target as HTMLImageElement).src = "/placeholder-image.png";
                                 // Fallback to data URI if no placeholder image exists
                                 (e.target as HTMLImageElement).onerror = () => {
-                                    (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'%3E%3C/circle%3E%3Cpolyline points='21 15 16 10 5 21'%3E%3C/polyline%3E";
+                                    (e.target as HTMLImageElement).src =
+                                        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'%3E%3C/circle%3E%3Cpolyline points='21 15 16 10 5 21'%3E%3C/polyline%3E";
                                 };
                             }}
                         />
@@ -55,10 +80,7 @@ export function ProductCard({ product }: ProductCardProps) {
                     </div>
                     <div className="flex justify-between items-center mt-2">
                         <div className="font-bold">${product.price.toFixed(2)}</div>
-                        <Button size="sm" variant="outline" onClick={(e) => {
-                            e.preventDefault(); // Prevent navigating to detail page
-                            // Add to cart logic here
-                        }}>
+                        <Button size="sm" variant="outline" onClick={handleAddToCart}>
                             <ShoppingCart className="h-4 w-4 mr-2" /> Add
                         </Button>
                     </div>

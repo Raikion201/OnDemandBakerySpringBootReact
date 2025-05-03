@@ -4,6 +4,7 @@ import authReducer from './features/todos/authSlice';
 import userReducer from './features/todos/userSlice';
 import adminAuthReducer from './features/admin/adminAuthSlice';
 import productReducer from './features/products/productSlice';
+import cartReducer from './features/cart/cartSlice';
 
 export const makeStore = () => {
   return configureStore({
@@ -12,6 +13,7 @@ export const makeStore = () => {
       user: userReducer,
       adminAuth: adminAuthReducer,
       products: productReducer,
+      cart: cartReducer,
     },
   });
 };

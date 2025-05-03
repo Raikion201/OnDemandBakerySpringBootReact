@@ -1,101 +1,107 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { 
-  Cart, CartItem, 
-  getInitialCart, 
-  addItemToCart as addItemToCartUtil,
-  updateCartItemQuantity as updateCartItemQuantityUtil,
-  removeItemFromCart as removeItemFromCartUtil,
-  clearCart as clearCartUtil,
-  syncCartWithServer
-} from '@/lib/cartUtils';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-interface CartState {
-  cart: Cart;
+// Define types for cart items
+export interface CartItem {
+  productId: number;
+  quantity: number;
+  productName?: string;
+  productPrice?: number;
+  productImageUrl?: string | null;
+}
+
+export interface CartState {
+  items: CartItem[];
+  total: number;
+  itemCount: number;
   loading: boolean;
   error: string | null;
-  lastSynced: number | null;
 }
+
+// Define the shape of the payload for addItemToCart action
+export interface AddToCartPayload {
+  productId: number;
+  quantity: number;
+  productDetails: {
+    name: string;
+    price: number;
+    imageUrl: string | null;
+  }
+}
+
+const calculateCartTotal = (items: CartItem[]) => {
+  return items.reduce((sum, item) => sum + (item.productPrice || 0) * item.quantity, 0);
+};
+
+const calculateItemCount = (items: CartItem[]) => {
+  return items.reduce((count, item) => count + item.quantity, 0);
+};
 
 // Initial state
 const initialState: CartState = {
-  cart: getInitialCart(),
+  items: [],
+  total: 0,
+  itemCount: 0,
   loading: false,
   error: null,
-  lastSynced: null
 };
 
-// Async thunk for syncing cart with server
-export const syncCart = createAsyncThunk(
-  'cart/sync',
-  async (cart: Cart, { rejectWithValue }) => {
-    try {
-      const updatedCart = await syncCartWithServer(cart);
-      return updatedCart;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to sync cart');
-    }
-  }
-);
-
-// Cart slice
 const cartSlice = createSlice({
   name: 'cart',
   initialState,
   reducers: {
-    addItemToCart: (state, action: PayloadAction<{ 
-      productId: number; 
-      quantity?: number;
-      productDetails?: { name: string; price: number; imageUrl?: string }
-    }>) => {
-      const { productId, quantity = 1, productDetails } = action.payload;
-      state.cart = addItemToCartUtil(state.cart, productId, quantity, productDetails);
+    addItemToCart: (state, action: PayloadAction<AddToCartPayload>) => {
+      const { productId, quantity, productDetails } = action.payload;
+      
+      // Check if item already exists in cart
+      const existingItemIndex = state.items.findIndex(item => item.productId === productId);
+      
+      if (existingItemIndex >= 0) {
+        // Update quantity if item exists
+        state.items[existingItemIndex].quantity += quantity;
+      } else {
+        // Add new item to cart
+        state.items.push({
+          productId,
+          quantity,
+          productName: productDetails.name,
+          productPrice: productDetails.price,
+          productImageUrl: productDetails.imageUrl
+        });
+      }
+      
+      // Update totals
+      state.total = calculateCartTotal(state.items);
+      state.itemCount = calculateItemCount(state.items);
     },
     
-    updateItemQuantity: (state, action: PayloadAction<{ 
-      productId: number; 
-      quantity: number 
-    }>) => {
+    updateItemQuantity: (state, action: PayloadAction<{ productId: number, quantity: number }>) => {
       const { productId, quantity } = action.payload;
-      state.cart = updateCartItemQuantityUtil(state.cart, productId, quantity);
+      const item = state.items.find(item => item.productId === productId);
+      
+      if (item) {
+        item.quantity = quantity;
+        state.total = calculateCartTotal(state.items);
+        state.itemCount = calculateItemCount(state.items);
+      }
     },
     
     removeItem: (state, action: PayloadAction<number>) => {
-      state.cart = removeItemFromCartUtil(state.cart, action.payload);
+      state.items = state.items.filter(item => item.productId !== action.payload);
+      state.total = calculateCartTotal(state.items);
+      state.itemCount = calculateItemCount(state.items);
     },
     
     clearCart: (state) => {
-      state.cart = clearCartUtil();
+      state.items = [];
+      state.total = 0;
+      state.itemCount = 0;
     },
     
-    setCart: (state, action: PayloadAction<Cart>) => {
-      state.cart = action.payload;
+    setLoading: (state, action: PayloadAction<boolean>) => {
+      state.loading = action.payload;
     }
-  },
-  extraReducers: (builder) => {
-    builder
-      .addCase(syncCart.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(syncCart.fulfilled, (state, action) => {
-        state.cart = action.payload;
-        state.loading = false;
-        state.lastSynced = Date.now();
-      })
-      .addCase(syncCart.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string || 'Failed to sync cart';
-      });
   }
 });
 
-// Export actions and reducer
-export const { 
-  addItemToCart, 
-  updateItemQuantity, 
-  removeItem, 
-  clearCart,
-  setCart
-} = cartSlice.actions;
-
+export const { addItemToCart, updateItemQuantity, removeItem, clearCart, setLoading } = cartSlice.actions;
 export default cartSlice.reducer;
