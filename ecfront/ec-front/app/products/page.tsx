@@ -35,10 +35,8 @@ export default function ProductsPage() {
     }, [dispatch]);
 
     useEffect(() => {
-        // Parse sort option into sort field and direction
         const [field, direction] = sortOption.split('_');
 
-        // Combine all filter parameters
         const params: ProductFilterParams = {
             ...filters,
             name: searchQuery || undefined,

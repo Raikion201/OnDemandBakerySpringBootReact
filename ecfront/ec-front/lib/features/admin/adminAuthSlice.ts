@@ -38,14 +38,22 @@ export const adminLogin = createAsyncThunk(
   }
 );
 
+// This thunk will verify authentication status and fetch user info
 export const checkAdminAuth = createAsyncThunk(
   'adminAuth/check',
   async (_, { rejectWithValue }) => {
     try {
-      // Call a protected admin endpoint to check if the admin is authenticated
-      const response = await axios.get('/api/admin/dashboard');
-      return response.data;
+      const response = await axios.get('/api/auth/me');
+      console.log("Auth check response:", response.data);
+      
+      // If we got a successful response, return the user data
+      if (response.data) {
+        return response.data;
+      } else {
+        return rejectWithValue('Authentication failed');
+      }
     } catch (error) {
+      console.error("Auth check error:", error);
       return rejectWithValue('Not authenticated as admin');
     }
   }
@@ -82,8 +90,6 @@ const adminAuthSlice = createSlice({
         state.loading = false;
         state.isAuthenticated = true;
         state.adminUser = action.payload;
-        // We would extract roles from the admin user data here
-        // This assumes the API returns role information
       })
       .addCase(adminLogin.rejected, (state, action) => {
         state.loading = false;
@@ -98,6 +104,7 @@ const adminAuthSlice = createSlice({
         state.loading = false;
         state.isAuthenticated = true;
         state.adminUser = action.payload;
+        console.log("Updated admin user in state:", action.payload);
       })
       .addCase(checkAdminAuth.rejected, (state) => {
         state.loading = false;

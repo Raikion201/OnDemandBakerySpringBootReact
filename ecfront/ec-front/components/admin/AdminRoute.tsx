@@ -1,77 +1,44 @@
 "use client";
 
-import { useAppSelector, useAppDispatch } from "@/lib/hooks";
-import { useEffect, useState } from "react";
+import { useEffect, useState, ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { checkAdminAuth } from "@/lib/features/admin/adminAuthSlice";
+import axios from "@/lib/axiosConfig";
+import { Loader2 } from "lucide-react";
 
 interface AdminRouteProps {
-  children: React.ReactNode;
-  requiredRoles?: string[];
+  children: ReactNode;
 }
 
-export function AdminRoute({ children, requiredRoles = [] }: AdminRouteProps) {
+export function AdminRoute({ children }: AdminRouteProps) {
+  const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
-  const dispatch = useAppDispatch();
-  const { isAuthenticated, adminUser, roles, loading } = useAppSelector(
-    (state) => state.adminAuth
-  );
-  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    const verifyAuth = async () => {
+    const checkAdminStatus = async () => {
       try {
-        await dispatch(checkAdminAuth()).unwrap();
-        setChecking(false);
+        // Check if the user is authenticated as admin by calling a protected endpoint
+        await axios.get("/api/admin/dashboard");
+        setIsAdmin(true);
       } catch (error) {
+        console.error("Not authenticated as admin:", error);
         router.push("/admin/login");
+      } finally {
+        setLoading(false);
       }
     };
 
-    if (!isAuthenticated) {
-      verifyAuth();
-    } else {
-      setChecking(false);
-    }
-  }, [dispatch, isAuthenticated, router]);
+    checkAdminStatus();
+  }, [router]);
 
-  // Check if the user has the required roles
-  const hasRequiredRoles = 
-    requiredRoles.length === 0 || // No specific roles required
-    requiredRoles.some(role => roles.includes(role)); // Has at least one of the required roles
-
-  if (checking || loading) {
+  if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="h-10 w-10 mx-auto border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-          <p className="mt-2">Verifying authentication...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
-  if (!isAuthenticated) {
-    router.push("/admin/login");
-    return null;
-  }
-
-  if (!hasRequiredRoles) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-500">Access Denied</h1>
-          <p className="mt-2">You don't have permission to access this page.</p>
-          <button
-            className="mt-4 px-4 py-2 bg-primary text-white rounded"
-            onClick={() => router.push("/admin/dashboard")}
-          >
-            Back to Dashboard
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return <>{children}</>;
+  // Only render children if user is admin
+  return isAdmin ? <>{children}</> : null;
 }
