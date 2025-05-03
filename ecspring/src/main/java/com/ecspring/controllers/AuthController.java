@@ -3,15 +3,19 @@ package com.ecspring.controllers;
 import com.ecspring.dto.AuthResponseDto;
 import com.ecspring.dto.RegisterDto;
 import com.ecspring.dto.SignInDto;
+import com.ecspring.dto.ForgotPasswordRequestDto;
+import com.ecspring.dto.ResetPasswordRequestDto;
 import com.ecspring.security.jwt.JwtUtil;
 import com.ecspring.security.services.UserDetailsImpl;
 import com.ecspring.services.UserService;
+import com.ecspring.services.PasswordResetService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.mail.MessagingException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -37,12 +41,19 @@ public class AuthController {
 
         private final UserDetailsService UserDetailsService;
 
-        public AuthController(AuthenticationManager authenticationManager, UserService userService, JwtUtil jwtUtil,
-                        PasswordEncoder passwordEncoder, UserDetailsService UserDetailsService) {
+        private final PasswordResetService passwordResetService;
+
+        public AuthController(AuthenticationManager authenticationManager,
+                        UserService userService,
+                        JwtUtil jwtUtil,
+                        PasswordEncoder passwordEncoder,
+                        UserDetailsService UserDetailsService,
+                        PasswordResetService passwordResetService) {
                 this.authenticationManager = authenticationManager;
                 this.userService = userService;
                 this.jwtUtil = jwtUtil;
                 this.UserDetailsService = UserDetailsService;
+                this.passwordResetService = passwordResetService;
         }
 
         @PostMapping("/register")
@@ -64,7 +75,7 @@ public class AuthController {
                 try {
                         authentication = authenticationManager.authenticate(
                                         new UsernamePasswordAuthenticationToken(registerDto.getUsername(),
-                                        registerDto.getPassword()));
+                                                        registerDto.getPassword()));
                 } catch (org.springframework.security.core.AuthenticationException ex) {
                         log.error("Authentication error: {}", ex.getMessage());
                 }
@@ -106,7 +117,8 @@ public class AuthController {
                 try {
                         // Parse refresh token from request cookies
                         String refreshToken = jwtUtil.parseRefreshJwtFromCookie(request);
-                        if(refreshToken == null || !jwtUtil.validateJwtToken(refreshToken) || jwtUtil.isTokenExpired(refreshToken)){
+                        if (refreshToken == null || !jwtUtil.validateJwtToken(refreshToken)
+                                        || jwtUtil.isTokenExpired(refreshToken)) {
                                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Refresh token is expired");
                         }
                         // Extract username or email from refresh token
@@ -114,7 +126,7 @@ public class AuthController {
                         if (username == null || username.isEmpty()) {
                                 username = jwtUtil.getEmailFromToken(refreshToken);
                         }
-                        
+
                         // Load full user details with authorities from the database
                         UserDetailsImpl userDetails = (UserDetailsImpl) UserDetailsService.loadUserByUsername(username);
 
@@ -127,11 +139,11 @@ public class AuthController {
 
                         // Generate new token pair
                         jwtUtil.generateAndSetJwtTokens(response, authentication);
-                        
+
                         // Return user info with the response
                         return ResponseEntity.ok(
-                            new AuthResponseDto(userDetails.getName(), userDetails.getUsername(), userDetails.getEmail())
-                        );
+                                        new AuthResponseDto(userDetails.getName(), userDetails.getUsername(),
+                                                        userDetails.getEmail()));
                 } catch (Exception e) {
                         log.error("Failed to refresh token: {}", e.getMessage());
                         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Failed to refresh token");
@@ -155,6 +167,39 @@ public class AuthController {
                 SecurityContextHolder.clearContext();
 
                 return ResponseEntity.ok().body("Logged out successfully");
+        }
+
+        @PostMapping("/forgot-password")
+        public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequestDto requestDto) {
+                try {
+                        passwordResetService.createPasswordResetTokenForEmail(requestDto);
+                        return ResponseEntity.ok(
+                                        "If your email is registered, you will receive password reset instructions.");
+                } catch (MessagingException e) {
+                        log.error("Error sending password reset email: {}", e.getMessage());
+                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                        .body("Failed to send password reset email. Please try again.");
+                }
+        }
+
+        @PostMapping("/validate-reset-token")
+        public ResponseEntity<?> validateResetToken(@RequestParam("token") String token) {
+                boolean isValid = passwordResetService.validatePasswordResetToken(token);
+                if (isValid) {
+                        return ResponseEntity.ok("Token is valid");
+                } else {
+                        return ResponseEntity.badRequest().body("Invalid or expired token");
+                }
+        }
+
+        @PostMapping("/reset-password")
+        public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequestDto resetRequest) {
+                boolean success = passwordResetService.resetPassword(resetRequest);
+                if (success) {
+                        return ResponseEntity.ok("Password has been reset successfully");
+                } else {
+                        return ResponseEntity.badRequest().body("Invalid or expired token");
+                }
         }
 
 }

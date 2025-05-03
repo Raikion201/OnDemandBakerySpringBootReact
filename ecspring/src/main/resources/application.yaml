@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3307/ec
+    url: jdbc:mysql://localhost:3306/ec
     username: root
-    password: trieu123
+    password: Hoanghoahong789
   jpa:
     database: mysql
     show-sql: true
@@ -22,6 +22,17 @@ spring:
           client-secret: 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
           scope: email,profile
           redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: hoanghuy140204@gmail.com
+    password: bwjs hyjk cirz ohhs
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 jwt:
   secret: "Hs1rno/+4+mIyo4gkk49ymga6UOGG4FTYpo13KSxH20="
   expiration:
@@ -30,3 +41,5 @@ jwt:
 logging:
   level:
     org.springframework.security: DEBUG
+app:
+  frontend-url: http://localhost:3000
