@@ -7,7 +7,6 @@ import Link from "next/link";
 import { Product } from "@/lib/features/products/productSlice";
 import { useAppDispatch } from "@/lib/hooks";
 import { addItemToCart } from "@/lib/features/cart/cartSlice";
-import { toast } from "sonner";
 
 interface ProductCardProps {
     product: Product;
@@ -31,7 +30,6 @@ export function ProductCard({ product }: ProductCardProps) {
             })
         );
 
-        toast.success(`Added ${product.name} to cart`);
     };
 
     return (

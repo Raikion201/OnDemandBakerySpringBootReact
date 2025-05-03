@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "@/lib/axiosConfig";
-import { toast } from "sonner";
 import { Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,7 +45,6 @@ export default function UsersManagementPage() {
       const response = await axios.get('/api/admin/users');
       setUsers(response.data);
     } catch (error) {
-      toast.error("Failed to fetch users");
       console.error('Error fetching users:', error);
     } finally {
       setLoading(false);
@@ -67,10 +65,8 @@ export default function UsersManagementPage() {
     
     try {
       await axios.delete(`/api/user/${userToDelete.id}`);
-      toast.success('User deleted successfully');
       setUsers(users.filter(user => user.id !== userToDelete.id));
     } catch (error) {
-      toast.error('Failed to delete user');
       console.error('Error deleting user:', error);
     } finally {
       setDeleteDialogOpen(false);

@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ChevronLeft, Star, ShoppingCart, MinusCircle, PlusCircle } from "lucide-react";
-import { toast } from "sonner";
 
 export default function ProductDetailPage() {
     const { id } = useParams();
@@ -37,7 +36,6 @@ export default function ProductDetailPage() {
                     imageUrl: product.imageUrl
                 }
             }));
-            toast.success(`Added ${quantity} ${product.name} to cart`);
         }
     };
 

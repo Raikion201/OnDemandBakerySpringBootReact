@@ -15,7 +15,7 @@ import {
   Plus, 
   Trash2,
 } from 'lucide-react';
-import { toast } from 'sonner';
+// Remove toast import
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { 
@@ -44,7 +44,7 @@ export function CartComponent({ variant = 'icon' }: CartComponentProps) {
     if (newQuantity <= 0) {
       // Remove item
       dispatch(removeItem(productId));
-      toast.info('Item removed from cart');
+      // Remove toast notification
     } else {
       // Update quantity
       dispatch(updateItemQuantity({ productId, quantity: newQuantity }));
@@ -54,7 +54,7 @@ export function CartComponent({ variant = 'icon' }: CartComponentProps) {
   // Clear the cart
   const handleClearCart = () => {
     dispatch(clearCart());
-    toast.info('Cart cleared');
+    // Remove toast notification
   };
 
   // Format price
@@ -68,11 +68,11 @@ export function CartComponent({ variant = 'icon' }: CartComponentProps) {
   // Handle checkout
   const handleCheckout = () => {
     if (items.length === 0) {
-      toast.error('Your cart is empty');
+      // Remove toast notification
       return;
     }
     
-    toast.success('Checkout functionality coming soon!');
+    // Remove toast notification
     // router.push('/checkout');
   };
 
@@ -129,11 +129,20 @@ export function CartComponent({ variant = 'icon' }: CartComponentProps) {
               <div className="h-16 w-16 bg-muted rounded-md flex-shrink-0 flex items-center justify-center">
                 {item.productImageUrl ? (
                   <img 
-                    src={item.productImageUrl} 
+                    src={
+                      item.productImageUrl.startsWith("http")
+                        ? item.productImageUrl
+                        : `http://localhost:8080${item.productImageUrl}`
+                    }
                     alt={item.productName || 'Product'} 
                     className="h-full w-full object-cover rounded-md"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'%3E%3C/circle%3E%3Cpolyline points='21 15 16 10 5 21'%3E%3C/polyline%3E";
+                      console.error("Image failed to load:", item.productImageUrl);
+                      (e.target as HTMLImageElement).src = "/placeholder-image.png";
+                      // Fallback to data URI if no placeholder image exists
+                      (e.target as HTMLImageElement).onerror = () => {
+                        (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'%3E%3C/circle%3E%3Cpolyline points='21 15 16 10 5 21'%3E%3C/polyline%3E";
+                      };
                     }}
                   />
                 ) : (

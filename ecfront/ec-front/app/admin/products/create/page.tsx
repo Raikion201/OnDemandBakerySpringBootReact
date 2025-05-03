@@ -5,7 +5,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 import { useAppDispatch } from "@/lib/hooks";
 import { createProduct,updateProduct } from "@/lib/features/products/productSlice";
 import { AdminRoute } from "@/components/admin/AdminRoute";
@@ -108,11 +107,9 @@ export default function CreateProductPage() {
             console.log("Image uploaded, URL:", imageUrl);
           } catch (imageError) {
             console.error("Failed to upload image:", imageError);
-            toast.error("Product updated but image upload failed");
           }
         }
         
-        toast.success("Product updated successfully");
       } 
       // Create new product if productId doesn't exist
       else {
@@ -144,14 +141,10 @@ export default function CreateProductPage() {
             console.log("Image uploaded, URL:", imageUrl);
           } catch (imageError) {
             console.error("Failed to upload image:", imageError);
-            toast.error("Product created but image upload failed");
           }
         }
-        
-        toast.success("Product created successfully");
-      }
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : productId ? "Failed to update product" : "Failed to create product");
+      // Remove toast notification
     } finally {
       setLoading(false);
     }
