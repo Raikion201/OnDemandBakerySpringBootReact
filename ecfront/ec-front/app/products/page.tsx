@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { fetchFilteredProducts, ProductFilterParams } from "@/lib/features/products/productSlice";
+import { fetchAllProducts } from "@/lib/features/products/productSlice"; // We'll modify this action
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ProductCard } from "@/components/products/ProductCard";
@@ -21,46 +21,92 @@ import { Pagination } from "@/components/ui/pagination";
 
 export default function ProductsPage() {
     const dispatch = useAppDispatch();
-    const { filteredProducts, loading, error } = useAppSelector((state) => state.products);
+    const { products, loading, error } = useAppSelector((state) => state.products);
     const [searchQuery, setSearchQuery] = useState("");
     const [sortOption, setSortOption] = useState("name_asc");
     const [currentPage, setCurrentPage] = useState(0);
-    const [filters, setFilters] = useState<ProductFilterParams>({});
+    const [filters, setFilters] = useState({
+        minPrice: undefined as number | undefined,
+        maxPrice: undefined as number | undefined,
+        inStock: undefined as boolean | undefined,
+    });
 
     const pageSize = 8;
 
+    // Fetch all products on initial load
     useEffect(() => {
-        // Fetch initial products
-        dispatch(fetchFilteredProducts({ page: 0, size: pageSize }));
+        dispatch(fetchAllProducts());
     }, [dispatch]);
 
-    useEffect(() => {
+    // Apply client-side filtering, sorting, and pagination
+    const filteredAndSortedProducts = useMemo(() => {
+        // Filter products based on search query and filters
+        let result = [...products];
+        
+        // Apply search filter
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            result = result.filter(product => 
+                product.name.toLowerCase().includes(query) || 
+                (product.description && product.description.toLowerCase().includes(query))
+            );
+        }
+        
+        // Apply price filters
+        if (filters.minPrice !== undefined) {
+            result = result.filter(product => product.price >= filters.minPrice!);
+        }
+        
+        if (filters.maxPrice !== undefined) {
+            result = result.filter(product => product.price <= filters.maxPrice!);
+        }
+        
+        // Apply in-stock filter
+        if (filters.inStock !== undefined) {
+            result = result.filter(product => 
+                filters.inStock ? product.quantity > 0 : true
+            );
+        }
+        
+        // Apply sorting
         const [field, direction] = sortOption.split('_');
-
-        const params: ProductFilterParams = {
-            ...filters,
-            name: searchQuery || undefined,
-            page: currentPage,
-            size: pageSize,
-            sort: field,
-            direction: direction
-        };
-
-        dispatch(fetchFilteredProducts(params));
-    }, [dispatch, filters, sortOption, currentPage, searchQuery]);
+        result.sort((a, b) => {
+            if (field === 'name') {
+                return direction === 'asc' 
+                    ? a.name.localeCompare(b.name) 
+                    : b.name.localeCompare(a.name);
+            } else if (field === 'price') {
+                return direction === 'asc' 
+                    ? a.price - b.price 
+                    : b.price - a.price;
+            }
+            return 0;
+        });
+        
+        return result;
+    }, [products, searchQuery, filters, sortOption]);
+    
+    // Get current page items
+    const currentProducts = useMemo(() => {
+        const startIndex = currentPage * pageSize;
+        return filteredAndSortedProducts.slice(startIndex, startIndex + pageSize);
+    }, [filteredAndSortedProducts, currentPage, pageSize]);
+    
+    // Calculate total pages
+    const totalPages = Math.ceil(filteredAndSortedProducts.length / pageSize);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         setCurrentPage(0); // Reset to first page on new search
     };
 
-    const handleApplyFilters = (newFilters: ProductFilterParams) => {
+    const handleApplyFilters = (newFilters: any) => {
         setFilters(newFilters);
         setCurrentPage(0); // Reset to first page when filters change
     };
 
     const handlePageChange = (page: number) => {
-        setCurrentPage(page);
+        setCurrentPage(page - 1);
     };
 
     return (
@@ -116,7 +162,7 @@ export default function ProductsPage() {
 
                         {/* Results count */}
                         <div className="text-sm text-muted-foreground">
-                            Showing {filteredProducts.content.length} of {filteredProducts.totalElements} products
+                            Showing {currentProducts.length} of {filteredAndSortedProducts.length} products
                         </div>
 
                         {/* Products grid */}
@@ -128,29 +174,33 @@ export default function ProductsPage() {
                             <div className="flex justify-center py-20">
                                 <p className="text-red-500">{error}</p>
                             </div>
-                        ) : filteredProducts.content.length === 0 ? (
+                        ) : currentProducts.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-20 text-center">
                                 <h3 className="text-xl font-semibold mb-2">No products found</h3>
                                 <p className="text-muted-foreground mb-4">Try adjusting your search or filters</p>
                                 <Button onClick={() => {
                                     setSearchQuery("");
-                                    setFilters({});
+                                    setFilters({
+                                        minPrice: undefined,
+                                        maxPrice: undefined,
+                                        inStock: undefined
+                                    });
                                 }}>Clear all filters</Button>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
-                                {filteredProducts.content.map((product) => (
+                                {currentProducts.map((product) => (
                                     <ProductCard key={product.id} product={product} />
                                 ))}
                             </div>
                         )}
 
                         {/* Pagination */}
-                        {filteredProducts.totalPages > 1 && (
+                        {totalPages > 1 && (
                             <Pagination
                                 currentPage={currentPage + 1}
-                                totalPages={filteredProducts.totalPages}
-                                onPageChange={(page) => handlePageChange(page - 1)}
+                                totalPages={totalPages}
+                                onPageChange={handlePageChange}
                             />
                         )}
                     </div>

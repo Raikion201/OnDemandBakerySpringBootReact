@@ -11,6 +11,7 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
+    console.log("Rendering ProductCard for:", product.quantity,product.name);
     return (
         <Link href={`/products/${product.id}`}>
             <Card className="overflow-hidden transition-all hover:shadow-lg h-full">
@@ -52,9 +53,6 @@ export function ProductCard({ product }: ProductCardProps) {
                             </div>
                         )}
                     </div>
-                    <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-                        {product.description}
-                    </p>
                     <div className="flex justify-between items-center mt-2">
                         <div className="font-bold">${product.price.toFixed(2)}</div>
                         <Button size="sm" variant="outline" onClick={(e) => {
