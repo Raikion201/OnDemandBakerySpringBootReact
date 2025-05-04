@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface OrderService {
     OrderDto createOrderFromCart(Long userId);
-    OrderDto createOrderFromRequest(Long userId, CheckoutRequestDto checkoutRequest);
+    OrderDto createOrderFromRequest(String username, CheckoutRequestDto checkoutRequest);
     OrderDto getOrderById(Long id);
     OrderDto getOrderByOrderNumber(String orderNumber);
     List<OrderDto> getAllOrders();

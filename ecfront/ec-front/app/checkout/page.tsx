@@ -199,9 +199,6 @@ export default function CheckoutPage() {
                 <p className="text-2xl font-bold">{orderNumber}</p>
               </div>
               
-              <p className="text-center text-muted-foreground">
-                A confirmation email has been sent to your email address.
-              </p>
               
               <div className="flex justify-center pt-4">
                 <Button onClick={() => router.push("/products")}>

@@ -39,7 +39,7 @@ public class OrderController {
             @RequestBody @Valid CheckoutRequestDto checkoutRequest,
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
         try {
-            OrderDto newOrder = orderService.createOrderFromRequest(userDetails.getId(), checkoutRequest);
+            OrderDto newOrder = orderService.createOrderFromRequest(userDetails.getUsername(), checkoutRequest);
             return new ResponseEntity<>(newOrder, HttpStatus.CREATED);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

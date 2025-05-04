@@ -237,10 +237,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public OrderDto createOrderFromRequest(Long userId, CheckoutRequestDto checkoutRequest) {
+    public OrderDto createOrderFromRequest(String username, CheckoutRequestDto checkoutRequest) {
         // Find the user
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+        UserEntity user = userRepository.findByUsername(username);
         
         // Create new order
         OrderEntity order = new OrderEntity();
