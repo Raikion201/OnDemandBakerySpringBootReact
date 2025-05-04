@@ -35,7 +35,7 @@ export const register = createAsyncThunk(
   }, { rejectWithValue }) => {
     try {
       const response = await axios.post<AuthResponse>(
-        'http://localhost:8080/api/auth/register',
+        '/api/auth/register',  // Use relative URL (baseURL is set in axiosConfig)
         userData
       );  
       
@@ -61,7 +61,7 @@ export const login = createAsyncThunk(
   }, { rejectWithValue }) => {
     try {
       const response = await axios.post<AuthResponse>(
-        'http://localhost:8080/api/auth/login',
+        '/api/auth/login',  // Use relative URL (baseURL is set in axiosConfig)
         userData
       );
       

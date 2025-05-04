@@ -1,7 +1,9 @@
 import axios from 'axios';
 
-axios.defaults.baseURL = 'http://localhost:8080';
+// Use environment variable for base URL
+const baseURL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
+axios.defaults.baseURL = baseURL;
 axios.defaults.withCredentials = true;
 
 // Track if we're currently refreshing to prevent multiple refresh calls
