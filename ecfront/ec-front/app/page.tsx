@@ -24,12 +24,8 @@ export default function HomePage() {
       
       {/* Rest of content with horizontal centering and padding */}
       <main className="flex-1 flex flex-col items-center w-full">
-        <div className="w-full px-8">
-          <CategoriesSection />
-        </div>
-        <div className="w-full px-8">
-          <FeaturedProducts />
-        </div>
+
+ 
         <div className="w-full px-8">
           <TestimonialsSection />
         </div>
