@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Bookmark } from "lucide-react";
+import Image from "next/image";
 
 export function AboutSection() {
   return (
@@ -7,10 +8,13 @@ export function AboutSection() {
       <div className="container px-4 md:px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
           <div>
-            <div className="aspect-video rounded-lg bg-muted relative">
-              <div className="absolute inset-0 bg-primary/10 flex items-center justify-center text-primary">
-                Bakery Image: Our Story
-              </div>
+            <div className="aspect-video rounded-lg bg-muted relative overflow-hidden">
+              <Image 
+                src="/baker.jpg" 
+                alt="Our Bakery Story" 
+                fill 
+                className="object-cover" 
+              />
             </div>
           </div>
           <div className="space-y-6">
