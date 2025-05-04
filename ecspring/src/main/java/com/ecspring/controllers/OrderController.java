@@ -114,7 +114,7 @@ public class OrderController {
 
     // Get all orders (admin only)
     @GetMapping
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_STAFF')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_STAFF','ROLE_OWNER')")
     public ResponseEntity<?> getAllOrders() {
         try {
             return ResponseEntity.ok(orderService.getAllOrders());
@@ -127,7 +127,7 @@ public class OrderController {
 
     // Get orders by status (admin only)
     @GetMapping("/status/{status}")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_STAFF')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_STAFF','ROLE_OWNER')")
     public ResponseEntity<?> getOrdersByStatus(@PathVariable String status) {
         try {
             return ResponseEntity.ok(orderService.getOrdersByStatus(status.toUpperCase()));
@@ -140,7 +140,7 @@ public class OrderController {
 
     // Get orders by date range (admin only)
     @GetMapping("/date-range")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_STAFF')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_STAFF','ROLE_OWNER')")
     public ResponseEntity<?> getOrdersByDateRange(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
@@ -155,7 +155,7 @@ public class OrderController {
 
     // Update order status (admin only)
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_STAFF')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_STAFF','ROLE_OWNER')")
     public ResponseEntity<?> updateOrderStatus(
             @PathVariable Long id,
             @RequestBody Map<String, String> statusUpdate) {
@@ -177,7 +177,7 @@ public class OrderController {
 
     // Delete order (admin only)
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_STAFF','ROLE_OWNER')")
     public ResponseEntity<?> deleteOrder(@PathVariable Long id) {
         try {
             orderService.deleteOrder(id);

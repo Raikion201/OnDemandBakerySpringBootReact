@@ -55,15 +55,7 @@ export default function AdminLoginPage() {
   
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Logo Section - Positioned in top left */}
-      <div className="p-6 md:p-10">
-        <Link href="/" className="inline-block">
-          <div className="flex flex-col">
-            <div className="text-3xl font-bold text-primary">BakeDelights</div>
-            <p className="text-sm text-muted-foreground mt-1">Admin Portal</p>
-          </div>
-        </Link>
-      </div>
+      {/* Removed the Logo Section that was positioned in top left */}
       
       {/* Center the login card */}
       <div className="flex-1 flex items-center justify-center p-6 md:p-10">

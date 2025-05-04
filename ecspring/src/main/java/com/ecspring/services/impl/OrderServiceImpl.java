@@ -320,6 +320,16 @@ public class OrderServiceImpl implements OrderService {
         orderDto.setUserId(order.getUser().getId());
         orderDto.setUserName(order.getUser().getName());
         orderDto.setTotalAmount(totalAmount);
+        orderDto.setPaymentMethod(order.getPaymentMethod());
+        
+        // Map shipping information
+        orderDto.setShippingFirstName(order.getShippingFirstName());
+        orderDto.setShippingLastName(order.getShippingLastName());
+        orderDto.setShippingPhone(order.getShippingPhone());
+        orderDto.setShippingAddress(order.getShippingAddress());
+        orderDto.setShippingCity(order.getShippingCity());
+        orderDto.setShippingState(order.getShippingState());
+        orderDto.setShippingZipCode(order.getShippingZipCode());
         
         List<LineItemDto> lineItemDtos = items.stream()
                 .map(this::mapToLineItemDto)

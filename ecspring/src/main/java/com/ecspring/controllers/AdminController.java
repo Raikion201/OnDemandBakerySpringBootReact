@@ -104,7 +104,7 @@ public class AdminController {
         }
     }
     
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_OWNER', 'ROLE_STAFF')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_OWNER')")
     @GetMapping("/roles")
     public ResponseEntity<?> getAllRoles() {
         return ResponseEntity.ok(roleService.getAllRoleDtos());

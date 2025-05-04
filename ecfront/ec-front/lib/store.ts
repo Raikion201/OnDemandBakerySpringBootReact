@@ -5,6 +5,7 @@ import userReducer from './features/todos/userSlice';
 import adminAuthReducer from './features/admin/adminAuthSlice';
 import productReducer from './features/products/productSlice';
 import cartReducer from './features/cart/cartSlice';
+import orderReducer from './features/orders/orderSlice';
 
 export const makeStore = () => {
   return configureStore({
@@ -14,6 +15,7 @@ export const makeStore = () => {
       adminAuth: adminAuthReducer,
       products: productReducer,
       cart: cartReducer,
+      orders: orderReducer,
     },
   });
 };
