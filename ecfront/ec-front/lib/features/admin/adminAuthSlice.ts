@@ -63,10 +63,26 @@ export const adminLogout = createAsyncThunk(
   'adminAuth/logout',
   async (_, { rejectWithValue }) => {
     try {
+      // Call the logout endpoint
       await axios.post('/api/auth/logout');
+      
+      // Clear both admin user and regular user from localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('adminUser');
+        localStorage.removeItem('user'); // Also remove regular user
+      }
+      
       return true;
-    } catch (error) {
-      return rejectWithValue('Logout failed');
+    } catch (error: any) {
+      // Even if the API call fails, remove both admin and regular user from localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('adminUser');
+        localStorage.removeItem('user'); // Also remove regular user
+      }
+      
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to logout'
+      );
     }
   }
 );
@@ -78,6 +94,18 @@ const adminAuthSlice = createSlice({
     clearAdminError: (state) => {
       state.error = null;
     },
+    // Add a synchronous logout action like in authSlice
+    logout: (state) => {
+      state.adminUser = null;
+      state.isAuthenticated = false;
+      state.roles = [];
+      
+      // Also remove both admin and regular user from localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('adminUser');
+        localStorage.removeItem('user'); // Also remove regular user
+      }
+    }
   },
   extraReducers: (builder) => {
     builder
@@ -112,8 +140,14 @@ const adminAuthSlice = createSlice({
         state.adminUser = null;
       })
       
-      // Logout cases
+      // Logout cases - update to handle rejected case properly
       .addCase(adminLogout.fulfilled, (state) => {
+        state.isAuthenticated = false;
+        state.adminUser = null;
+        state.roles = [];
+      })
+      .addCase(adminLogout.rejected, (state) => {
+        // Even if the API call fails, still log out locally
         state.isAuthenticated = false;
         state.adminUser = null;
         state.roles = [];
@@ -121,5 +155,5 @@ const adminAuthSlice = createSlice({
   },
 });
 
-export const { clearAdminError } = adminAuthSlice.actions;
+export const { clearAdminError, logout } = adminAuthSlice.actions;
 export default adminAuthSlice.reducer;
