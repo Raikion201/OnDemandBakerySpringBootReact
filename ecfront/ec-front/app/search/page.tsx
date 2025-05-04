@@ -1,95 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import { Suspense } from "react";
+import { useRouter } from "next/navigation";
+import { useAppDispatch } from "@/lib/hooks";
 import { searchProducts } from "@/lib/features/products/productSlice";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { ProductCard } from "@/components/products/ProductCard";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search, ChevronLeft } from "lucide-react";
+import { SearchContent } from "./SearchContent";
 
 export default function SearchPage() {
-    const searchParams = useSearchParams();
-    const query = searchParams.get("q") || "";
     const router = useRouter();
     const dispatch = useAppDispatch();
-    const { products, loading, error } = useAppSelector((state) => state.products);
-    const [searchQuery, setSearchQuery] = useState(query);
-
-    useEffect(() => {
-        if (query) {
-            dispatch(searchProducts(query));
-        }
-    }, [dispatch, query]);
-
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
-    };
 
     return (
         <div className="flex flex-col min-h-screen">
             <Navbar />
-
-            <main className="flex-1 container px-4 py-8 md:px-6 md:py-12">
-                <div className="mb-8">
-                    <Button variant="ghost" onClick={() => router.push("/products")}>
-                        <ChevronLeft className="h-4 w-4 mr-2" />
-                        Back to Products
-                    </Button>
-
-                    <h1 className="text-3xl font-bold tracking-tight mt-4 mb-2">
-                        {query ? `Search Results for "${query}"` : "Search Products"}
-                    </h1>
-
-                    <form onSubmit={handleSearch} className="flex gap-2 max-w-lg mb-6">
-                        <Input
-                            placeholder="Search for products..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="flex-1"
-                        />
-                        <Button type="submit">
-                            <Search className="h-4 w-4 mr-2" />
-                            Search
-                        </Button>
-                    </form>
-                </div>
-
-                {loading ? (
-                    <div className="flex justify-center py-20">
+            <main className="flex-1">
+                <Suspense fallback={
+                    <div className="flex justify-center items-center h-[50vh]">
                         <div className="h-10 w-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
                     </div>
-                ) : error ? (
-                    <div className="flex justify-center py-20">
-                        <p className="text-red-500">{error}</p>
-                    </div>
-                ) : products.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-center">
-                        <h3 className="text-xl font-semibold mb-2">No products found</h3>
-                        <p className="text-muted-foreground mb-4">
-                            We couldn't find any products matching your search.
-                        </p>
-                        <Button onClick={() => router.push("/products")}>Browse All Products</Button>
-                    </div>
-                ) : (
-                    <>
-                        <div className="text-sm text-muted-foreground mb-6">
-                            Found {products.length} product{products.length !== 1 ? 's' : ''}
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                            {products.map((product) => (
-                                <ProductCard key={product.id} product={product} />
-                            ))}
-                        </div>
-                    </>
-                )}
+                }>
+                    <SearchContent />
+                </Suspense>
             </main>
-
             <Footer />
         </div>
     );

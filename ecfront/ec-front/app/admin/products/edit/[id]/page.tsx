@@ -27,10 +27,10 @@ const productSchema = z.object({
 
 type ProductFormValues = z.infer<typeof productSchema>;
 
-export default function EditProductPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
-  // Unwrap params with React.use() to handle both Promise and direct object cases
-  const unwrappedParams = 'then' in params ? React.use(params) : params;
-  const productId = parseInt(unwrappedParams.id);
+export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
+  // Use await instead of React.use() to properly handle Promise params
+  const { id } = await params;
+  const productId = parseInt(id);
   
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -245,7 +245,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                         src={previewImage || 
                           (imageUrl?.startsWith('data:') 
                             ? imageUrl 
-                            : `http://localhost:8080${imageUrl?.startsWith('/') ? imageUrl : '/' + imageUrl}`)}
+                            : `${process.env.NEXT_PUBLIC_API_BASE_URL}${imageUrl?.startsWith('/') ? imageUrl : '/' + imageUrl}`)}
                         alt="Product image" 
                         className="h-40 object-contain mx-auto"
                         onError={(e) => {
