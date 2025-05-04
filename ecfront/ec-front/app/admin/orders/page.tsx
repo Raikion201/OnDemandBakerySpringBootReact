@@ -205,11 +205,12 @@ export default function AdminOrdersPage() {
                       </TableCell>
                       <TableCell>{order.paymentMethod}</TableCell>
                       <TableCell>
-                        <div className="flex space-x-2">
+                        <div className="flex flex-col md:flex-row gap-2">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => viewOrderDetails(order)}
+                            className="w-full md:w-[130px] h-[30px]"
                           >
                             View Details
                           </Button>
@@ -219,7 +220,7 @@ export default function AdminOrdersPage() {
                             }
                             defaultValue={order.status}
                           >
-                            <SelectTrigger className="w-[130px]">
+                            <SelectTrigger className="w-full md:w-[130px] h-[30px]">
                               <SelectValue placeholder="Update Status" />
                             </SelectTrigger>
                             <SelectContent>
@@ -243,7 +244,7 @@ export default function AdminOrdersPage() {
 
       {/* Order Details Dialog */}
       <Dialog open={showOrderDetails} onOpenChange={setShowOrderDetails}>
-        <DialogContent className="max-w-[90vw] w-full">
+        <DialogContent className="min-w-[50vw] w-full">
           <DialogHeader>
             <DialogTitle>
               Order Details - {selectedOrder?.orderNumber}
