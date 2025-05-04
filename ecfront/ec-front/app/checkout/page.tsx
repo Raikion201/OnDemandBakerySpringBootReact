@@ -17,11 +17,11 @@ import { clearCart, clearDirectCheckoutItem } from "@/lib/features/cart/cartSlic
 import axios from "@/lib/axiosConfig";
 import { ChevronLeft } from "lucide-react";
 
-// Update the checkout schema to only allow "cash" payment method
+// Update the checkout schema to remove email field
 const checkoutSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Invalid email address"),
+  // Remove email field
   phone: z.string().min(10, "Phone number must be at least 10 digits"),
   address: z.string().min(1, "Address is required"),
   city: z.string().min(1, "City is required"),
@@ -40,11 +40,31 @@ export default function CheckoutPage() {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   
-  // Get values from cart state
+  // Always initialize these hooks, regardless of auth state
   const cartItems = useAppSelector((state) => state.cart.items);
   const cartTotal = useAppSelector((state) => state.cart.total);
   const user = useAppSelector((state) => state.auth.user);
   const directCheckoutItem = useAppSelector((state) => state.cart.directCheckoutItem);
+  
+  // Form initialization - MUST be called in every render
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    control,
+  } = useForm<CheckoutFormValues>({
+    resolver: zodResolver(checkoutSchema),
+    defaultValues: {
+      firstName: user?.name?.split(' ')[0] || "",
+      lastName: user?.name?.split(' ')[1] || "",
+      phone: "",
+      address: "",
+      city: "",
+      state: "",
+      zipCode: "",
+      paymentMethod: "cash",
+    },
+  });
   
   // Check if this is a direct checkout
   const isDirect = searchParams.get('direct') === 'true';
@@ -69,72 +89,37 @@ export default function CheckoutPage() {
   // Check if user is authenticated and redirect to login if not
   useEffect(() => {
     if (!user) {
-      // Save current URL to redirect back after login
+      // Save current URL with all parameters to redirect back after login
       if (typeof window !== 'undefined') {
-        localStorage.setItem('redirectAfterLogin', window.location.pathname + window.location.search);
+        const currentUrl = window.location.pathname + window.location.search;
+        localStorage.setItem('redirectAfterLogin', currentUrl);
+        
+        // Redirect to login page
+        router.push('/login');
       }
-      
-      // Redirect to login page
-      router.push('/login');
     }
   }, [user, router]);
   
   // Redirect if there are no items to check out
   useEffect(() => {
-    if ((isDirect && !directCheckoutItem) || (!isDirect && cartItems.length === 0) && !orderPlaced) {
+    if (!orderPlaced && (
+      (isDirect && !directCheckoutItem) || 
+      (!isDirect && cartItems.length === 0)
+    )) {
       router.push("/products");
     }
   }, [isDirect, directCheckoutItem, cartItems, orderPlaced, router]);
-  
-  // Don't render the checkout page if user is not authenticated
-  if (!user) {
-    return (
-      <div className="flex flex-col min-h-screen">
-        <Navbar />
-        <main className="flex-1 container px-4 py-8 md:px-6 md:py-12 flex items-center justify-center">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold mb-4">Authentication Required</h2>
-            <p className="mb-6">Please log in to continue with checkout.</p>
-            <div className="animate-pulse">Redirecting to login page...</div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  // Form initialization
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    control,
-  } = useForm<CheckoutFormValues>({
-    resolver: zodResolver(checkoutSchema),
-    defaultValues: {
-      firstName: user?.name?.split(' ')[0] || "",
-      lastName: user?.name?.split(' ')[1] || "",
-      email: user?.email || "",
-      phone: "",
-      address: "",
-      city: "",
-      state: "",
-      zipCode: "",
-      paymentMethod: "cash", // Set default to "cash"
-    },
-  });
 
   // Handle form submission
   const onSubmit = async (data: CheckoutFormValues) => {
     setSubmitting(true);
     
     try {
-      // Create order payload based on whether this is a direct checkout or cart checkout
+      // Create order payload without email
       const orderPayload = {
         customerInfo: {
           firstName: data.firstName,
           lastName: data.lastName,
-          email: data.email,
           phone: data.phone,
           address: data.address,
           city: data.city,
@@ -151,14 +136,12 @@ export default function CheckoutPage() {
         directPurchase: isDirect
       };
 
-      // In a real application, send to your backend
-      // const response = await axios.post('/api/orders/checkout', orderPayload);
+      // Send the order to the backend using the correct endpoint
+      // No change needed here since we kept the direct checkout endpoint as '/api/orders/checkout'
+      const response = await axios.post('/api/orders/checkout', orderPayload);
       
-      // For now, simulate API response
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Generate a random order number
-      const generatedOrderNumber = `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
+      // Get the order number from response
+      const generatedOrderNumber = response.data.orderNumber;
       setOrderNumber(generatedOrderNumber);
       
       // Clear relevant state based on checkout type
@@ -177,6 +160,23 @@ export default function CheckoutPage() {
       setSubmitting(false);
     }
   };
+
+  // Render placeholder/loading UI if not authenticated
+  if (!user) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
+        <main className="flex-1 container px-4 py-8 md:px-6 md:py-12 flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">Authentication Required</h2>
+            <p className="mb-6">Please log in to continue with checkout.</p>
+            <div className="animate-pulse">Redirecting to login page...</div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   // Show order confirmation if order was placed
   if (orderPlaced) {
@@ -216,6 +216,7 @@ export default function CheckoutPage() {
     );
   }
 
+  // Main checkout UI
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
@@ -274,31 +275,17 @@ export default function CheckoutPage() {
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email Address</Label>
-                      <Input 
-                        id="email" 
-                        type="email" 
-                        {...register("email")} 
-                        disabled={submitting} 
-                      />
-                      {errors.email && (
-                        <p className="text-red-500 text-sm">{errors.email.message}</p>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Phone Number</Label>
-                      <Input 
-                        id="phone" 
-                        {...register("phone")} 
-                        disabled={submitting} 
-                      />
-                      {errors.phone && (
-                        <p className="text-red-500 text-sm">{errors.phone.message}</p>
-                      )}
-                    </div>
+                  {/* Replace the grid containing email and phone with just phone */}
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input 
+                      id="phone" 
+                      {...register("phone")} 
+                      disabled={submitting} 
+                    />
+                    {errors.phone && (
+                      <p className="text-red-500 text-sm">{errors.phone.message}</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>

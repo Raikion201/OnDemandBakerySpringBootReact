@@ -20,4 +20,14 @@ public class OrderDto {
     private String userName;
     private List<LineItemDto> items = new ArrayList<>();
     private Double totalAmount;
+    private String paymentMethod;
+    
+    // Update shipping information to include name
+    private String shippingFirstName;
+    private String shippingLastName;
+    private String shippingPhone;
+    private String shippingAddress;
+    private String shippingCity;
+    private String shippingState;
+    private String shippingZipCode;
 }

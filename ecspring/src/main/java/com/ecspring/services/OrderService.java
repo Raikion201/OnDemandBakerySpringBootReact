@@ -1,12 +1,14 @@
 package com.ecspring.services;
 
 import com.ecspring.dto.OrderDto;
+import com.ecspring.dto.CheckoutRequestDto;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 public interface OrderService {
     OrderDto createOrderFromCart(Long userId);
+    OrderDto createOrderFromRequest(Long userId, CheckoutRequestDto checkoutRequest);
     OrderDto getOrderById(Long id);
     OrderDto getOrderByOrderNumber(String orderNumber);
     List<OrderDto> getAllOrders();

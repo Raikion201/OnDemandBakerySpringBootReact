@@ -1,8 +1,11 @@
 package com.ecspring.controllers;
 
 import com.ecspring.dto.OrderDto;
+import com.ecspring.dto.CheckoutRequestDto;
+import com.ecspring.exception.ResourceNotFoundException;
 import com.ecspring.security.services.UserDetailsImpl;
 import com.ecspring.services.OrderService;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -30,14 +33,15 @@ public class OrderController {
         this.orderService = orderService;
     }
 
-    // Create order from user's cart
-    @PostMapping("/checkout")
-    public ResponseEntity<?> createOrder(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+    // Create order from checkout request
+    @PostMapping("/checkout")  // Keep this as "/checkout"
+    public ResponseEntity<?> createOrderFromRequest(
+            @RequestBody @Valid CheckoutRequestDto checkoutRequest,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
         try {
-            OrderDto newOrder = orderService.createOrderFromCart(userDetails.getId());
+            OrderDto newOrder = orderService.createOrderFromRequest(userDetails.getId(), checkoutRequest);
             return new ResponseEntity<>(newOrder, HttpStatus.CREATED);
         } catch (Exception e) {
-            log.error("Error creating order: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", e.getMessage()));
         }

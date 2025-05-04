@@ -2,6 +2,8 @@ package com.ecspring.services.impl;
 
 import com.ecspring.dto.LineItemDto;
 import com.ecspring.dto.OrderDto;
+import com.ecspring.dto.CheckoutOrderItemDto;
+import com.ecspring.dto.CheckoutRequestDto;
 import com.ecspring.entity.*;
 import com.ecspring.exception.ResourceNotFoundException;
 import com.ecspring.repositories.*;
@@ -231,6 +233,82 @@ public class OrderServiceImpl implements OrderService {
         String randomStr = UUID.randomUUID().toString().substring(0, 4);
         
         return "ORD-" + dateStr + "-" + randomStr;
+    }
+
+    @Override
+    @Transactional
+    public OrderDto createOrderFromRequest(Long userId, CheckoutRequestDto checkoutRequest) {
+        // Find the user
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+        
+        // Create new order
+        OrderEntity order = new OrderEntity();
+        order.setOrderNumber(generateOrderNumber());
+        order.setOrderDate(LocalDateTime.now());
+        order.setStatus("PENDING");
+        order.setUser(user);
+        order.setPaymentMethod(checkoutRequest.getPaymentMethod());
+        order.setTotalAmount(checkoutRequest.getTotalAmount());
+        
+        // Set shipping information including name
+        order.setShippingFirstName(checkoutRequest.getCustomerInfo().getFirstName());
+        order.setShippingLastName(checkoutRequest.getCustomerInfo().getLastName());
+        order.setShippingPhone(checkoutRequest.getCustomerInfo().getPhone());
+        order.setShippingAddress(checkoutRequest.getCustomerInfo().getAddress());
+        order.setShippingCity(checkoutRequest.getCustomerInfo().getCity());
+        order.setShippingState(checkoutRequest.getCustomerInfo().getState());
+        order.setShippingZipCode(checkoutRequest.getCustomerInfo().getZipCode());
+        
+        order = orderRepository.save(order);
+        
+        // Create invoice
+        InvoiceEntity invoice = new InvoiceEntity();
+        invoice.setInvoiceNumber("INV-" + order.getOrderNumber());
+        invoice.setDateCreated(LocalDateTime.now());
+        invoice.setOrder(order);
+        invoiceRepository.save(invoice);
+        
+        List<LineItemEntity> orderItems = new ArrayList<>();
+        
+        // Process order items
+        double totalAmount = 0.0;
+        for (CheckoutOrderItemDto itemDto : checkoutRequest.getOrderItems()) {
+            ProductEntity product = productRepository.findById(itemDto.getProductId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + itemDto.getProductId()));
+            
+            // Check if product is in stock
+            if (product.getQuantity() < itemDto.getQuantity()) {
+                throw new IllegalStateException("Not enough stock for product: " + product.getName());
+            }
+            
+            // Create line item
+            LineItemEntity orderItem = new LineItemEntity();
+            orderItem.setProduct(product);
+            orderItem.setQuantity(itemDto.getQuantity());
+            orderItem.setOrder(order);
+            orderItem = lineItemRepository.save(orderItem);
+            orderItems.add(orderItem);
+            
+            // Update product stock
+            product.setQuantity(product.getQuantity() - itemDto.getQuantity());
+            productRepository.save(product);
+            
+            // Calculate item total
+            totalAmount += product.getPrice() * itemDto.getQuantity();
+        }
+        
+        // If not a direct purchase, clear cart
+        if (!checkoutRequest.getDirectPurchase()) {
+            CartEntity cart = cartRepository.findByUser(user).orElse(null);
+            if (cart != null) {
+                List<LineItemEntity> cartItems = lineItemRepository.findByCart(cart);
+                lineItemRepository.deleteAll(cartItems);
+            }
+        }
+        
+        // Return order DTO with the correct number of arguments
+        return mapToOrderDto(order, orderItems, totalAmount);
     }
 
     // Helper methods

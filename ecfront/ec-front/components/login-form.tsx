@@ -4,7 +4,6 @@ import * as z from "zod";
 import { useForm } from "react-hook-form";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { login } from "@/lib/features/todos/authSlice";
-import { useRouter } from "next/navigation";
 import { Loader2Icon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -22,13 +21,20 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
+interface LoginFormProps {
+  className?: string;
+  onSubmit?: (data: FormData) => void;
+  loading?: boolean;
+}
+
 export function LoginForm({
   className,
+  onSubmit,
+  loading,
   ...props
-}: React.ComponentPropsWithoutRef<"div">) {
+}: LoginFormProps) {
   const dispatch = useAppDispatch();
-  const router = useRouter();
-  const { loading, error } = useAppSelector((state) => state.auth);
+  const { error } = useAppSelector((state) => state.auth);
 
   const {
     register,
@@ -38,12 +44,15 @@ export function LoginForm({
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = async (data: LoginFormValues) => {
+  const handleSubmitForm = async (data: LoginFormValues) => {
     try {
+      // Dispatch login action
       await dispatch(login(data)).unwrap();
-      const dest = localStorage.getItem("previousUrl") || "/";
-      localStorage.removeItem("previousUrl");
-      router.push(dest);
+
+      // Call the parent's onSubmit to handle any additional logic
+      if (onSubmit) {
+        onSubmit(data);
+      }
     } catch (errorrr) {
       toast.error(typeof errorrr === "string" ? errorrr : "Login failed");
     }
@@ -56,7 +65,7 @@ export function LoginForm({
           <CardTitle className="text-2xl text-center">Login</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={handleSubmit(handleSubmitForm)} className="space-y-6">
             <div className="space-y-4">
               <div className="grid gap-2">
                 <Label htmlFor="username">Username/Email</Label>

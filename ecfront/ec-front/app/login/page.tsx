@@ -1,29 +1,36 @@
 "use client";
 
 import { LoginForm } from "@/components/login-form"
-import { useRouter } from "next/navigation" 
-import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useAppSelector } from "@/lib/hooks";
 
 export default function LoginPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const user = useAppSelector((state) => state.auth.user);
+
+  // Check if the user is already logged in and handle redirects
+  useEffect(() => {
+    if (user) {
+      // If there's a redirect URL stored, use it
+      const redirectUrl = localStorage.getItem('redirectAfterLogin');
+      if (redirectUrl) {
+        localStorage.removeItem('redirectAfterLogin'); // Clean up
+        router.push(redirectUrl);
+      } else {
+        // Default redirect if no specific redirect is saved
+        router.push('/');
+      }
+    }
+  }, [user, router]);
 
   const onSubmit = async (data: FormData) => {
     try {
       setLoading(true)
-
-      // ...existing login logic...
-
-      // After successful login, check for redirect
-      const redirectUrl = localStorage.getItem("redirectAfterLogin")
-      if (redirectUrl) {
-        localStorage.removeItem("redirectAfterLogin") // Clean up
-        router.push(redirectUrl)
-      } else {
-        // Default redirect if no specific redirect is saved
-        router.push("/")
-      }
+      // The actual login logic is handled in the LoginForm component
+      // After login is successful, the useEffect above will handle the redirect
     } catch (error) {
       // ...existing error handling...
     } finally {
