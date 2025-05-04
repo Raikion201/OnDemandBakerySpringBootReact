@@ -69,7 +69,9 @@ export function SignUpForm({
       ).unwrap();
 
       toast.success("Account created successfully!");
-      router.push("/user");
+      const dest = localStorage.getItem("previousUrl") || "/";
+      localStorage.removeItem("previousUrl");
+      router.push(dest);
     } catch (error) {
       toast.error(typeof error === "string" ? error : "Registration failed");
     }
@@ -190,4 +192,4 @@ export function SignUpForm({
       </Card>
     </div>
   );
-} 
+}

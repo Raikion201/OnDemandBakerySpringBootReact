@@ -71,7 +71,8 @@ export const fetchProductById = createAsyncThunk(
   'products/fetchProductById',
   async (id: number, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`http://localhost:8080/api/products/${id}`);
+      // Standardize to use relative URL
+      const response = await axios.get(`/api/products/${id}`);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch product');
@@ -120,7 +121,8 @@ export const fetchFilteredProducts = createAsyncThunk(
   'products/fetchFilteredProducts',
   async (params: ProductFilterParams, { rejectWithValue }) => {
     try {
-      const response = await axios.get('http://localhost:8080/api/products/filter', { params });
+      // Standardize to use relative URL
+      const response = await axios.get('/api/products/filter', { params });
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch products');

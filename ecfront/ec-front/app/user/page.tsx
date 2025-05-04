@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Loader2Icon } from "lucide-react";
 import axios from '@/lib/axiosConfig';
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
 
 export default function UsersPage() {
   const dispatch = useAppDispatch();
@@ -28,9 +27,7 @@ export default function UsersPage() {
   const handleRemoveAccess = async () => {
     try {
       await axios.post('/api/auth/removeAccess');
-      toast.success('Access token removed successfully');
     } catch (error) {
-      toast.error('Failed to remove access token');
       console.error('Error removing access token:', error);
     }
   };
@@ -38,10 +35,8 @@ export default function UsersPage() {
   const handleLogout = async () => {
     try {
       await axios.post('/api/auth/logout');
-      toast.success('Logged out successfully');
       router.push('/login'); // Redirect to login page
     } catch (error) {
-      toast.error('Failed to logout');
       console.error('Error logging out:', error);
     }
   };

@@ -6,7 +6,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { fetchProductById, updateProduct, clearProductState } from "@/lib/features/products/productSlice";
 import { AdminRoute } from "@/components/admin/AdminRoute";
@@ -93,9 +92,8 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         }
       })).unwrap();
       
-      toast.success("Product updated successfully");
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : "Failed to update product");
+      // Remove toast notification
     } finally {
       setSubmitting(false);
     }

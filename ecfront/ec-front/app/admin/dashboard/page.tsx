@@ -6,7 +6,6 @@ import { AdminRoute } from "@/components/admin/AdminRoute";
 import { useRouter } from "next/navigation";
 import { useAppSelector, useAppDispatch } from "@/lib/hooks";
 import { adminLogout, checkAdminAuth } from "@/lib/features/admin/adminAuthSlice";
-import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import axios from "@/lib/axiosConfig";
 
@@ -48,7 +47,6 @@ export default function AdminDashboard() {
       });
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      toast.error('Failed to load dashboard statistics');
     }
   };
 
@@ -60,7 +58,6 @@ export default function AdminDashboard() {
         await fetchDashboardData();
         setIsLoading(false);
       } catch (error) {
-        toast.error("Authentication failed");
         router.push("/admin/login");
       }
     };
@@ -73,10 +70,9 @@ export default function AdminDashboard() {
   const handleLogout = async () => {
     try {
       await dispatch(adminLogout()).unwrap();
-      toast.success("Logged out successfully");
       router.push("/admin/login");
     } catch (error) {
-      toast.error("Failed to logout: " + error);
+      console.error("Failed to logout: ", error);
     }
   };
 

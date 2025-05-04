@@ -1,7 +1,6 @@
 import axios from 'axios';
 
 axios.defaults.baseURL = 'http://localhost:8080';
-
 axios.defaults.withCredentials = true;
 
 // Track if we're currently refreshing to prevent multiple refresh calls
@@ -21,6 +20,12 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
+// This function determines if a URL should be treated as a public route (no auth required)
+const isPublicRoute = (url = '') => {
+  // Very simple check - if the URL contains '/api/products', it's a public route
+  return url.includes('/api/products');
+};
+
 axios.interceptors.response.use(
   (response) => {
     return response;
@@ -28,8 +33,16 @@ axios.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
+    // Skip auth handling for public routes including all product endpoints
+    // This check must happen BEFORE any other auth-related code
+    if (originalRequest && isPublicRoute(originalRequest.url)) {
+      console.log("Public route detected, skipping auth redirect:", originalRequest.url);
+      return Promise.reject(error);
+    }
+    
+    // Only proceed with auth flow for protected routes
     if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
-      if (error.response?.data === "Refresh token is expired" ) {
+      if (error.response?.data === "Refresh token is expired") {
         window.location.href = '/login';
         return Promise.reject(error);
       }

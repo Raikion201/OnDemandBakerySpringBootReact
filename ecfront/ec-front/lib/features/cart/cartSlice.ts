@@ -1,101 +1,179 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { 
-  Cart, CartItem, 
-  getInitialCart, 
-  addItemToCart as addItemToCartUtil,
-  updateCartItemQuantity as updateCartItemQuantityUtil,
-  removeItemFromCart as removeItemFromCartUtil,
-  clearCart as clearCartUtil,
-  syncCartWithServer
-} from '@/lib/cartUtils';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-interface CartState {
-  cart: Cart;
-  loading: boolean;
-  error: string | null;
-  lastSynced: number | null;
+// Define types for cart items
+export interface CartItem {
+  productId: number;
+  quantity: number;
+  productName?: string;
+  productPrice?: number;
+  productImageUrl?: string;
+  lineTotal?: number;
+  maxQuantity?: number; // Add max quantity field
 }
 
-// Initial state
-const initialState: CartState = {
-  cart: getInitialCart(),
-  loading: false,
-  error: null,
-  lastSynced: null
-};
+export interface CartState {
+  items: CartItem[];
+  total: number;
+  itemCount: number;
+  loading: boolean;
+  error: string | null;
+}
 
-// Async thunk for syncing cart with server
-export const syncCart = createAsyncThunk(
-  'cart/sync',
-  async (cart: Cart, { rejectWithValue }) => {
+// Define the shape of the payload for addItemToCart action
+export interface AddToCartPayload {
+  productId: number;
+  quantity: number;
+  productDetails: {
+    name: string;
+    price: number;
+    imageUrl: string | null;
+    maxQuantity?: number; // Include maxQuantity in product details
+  }
+}
+
+// Helper function to load cart from localStorage
+const loadCartFromLocalStorage = () => {
+  if (typeof window !== 'undefined') {
     try {
-      const updatedCart = await syncCartWithServer(cart);
-      return updatedCart;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to sync cart');
+      const savedCart = localStorage.getItem('cart');
+      if (savedCart) {
+        const parsedData = JSON.parse(savedCart);
+        // Ensure we return an array even if the stored data is not an array
+        return Array.isArray(parsedData) ? parsedData : [];
+      }
+    } catch (error) {
+      console.error('Failed to parse cart from localStorage:', error);
     }
   }
-);
+  return [];
+};
 
-// Cart slice
+// Helper function to save cart to localStorage
+const saveCartToLocalStorage = (items: CartItem[]) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('cart', JSON.stringify(items));
+  }
+};
+
+// Helper functions to calculate totals
+const calculateCartTotal = (items: CartItem[]) => {
+  return items.reduce((sum, item) => sum + (item.productPrice || 0) * item.quantity, 0);
+};
+
+const calculateItemCount = (items: CartItem[]) => {
+  return items.reduce((count, item) => count + item.quantity, 0);
+};
+
+// Initial state with proper typing and default values
+const initialState: CartState = {
+  items: loadCartFromLocalStorage() || [],
+  total: 0,
+  itemCount: 0,
+  loading: false,
+  error: null
+};
+
+// Set initial totals based on loaded items
+if (Array.isArray(initialState.items)) {
+  initialState.total = calculateCartTotal(initialState.items);
+  initialState.itemCount = calculateItemCount(initialState.items);
+}
+
 const cartSlice = createSlice({
   name: 'cart',
   initialState,
   reducers: {
-    addItemToCart: (state, action: PayloadAction<{ 
-      productId: number; 
-      quantity?: number;
-      productDetails?: { name: string; price: number; imageUrl?: string }
-    }>) => {
-      const { productId, quantity = 1, productDetails } = action.payload;
-      state.cart = addItemToCartUtil(state.cart, productId, quantity, productDetails);
+    // Add initializeCart action
+    initializeCart: (state, action) => {
+      if (Array.isArray(action.payload)) {
+        state.items = action.payload;
+        state.total = calculateCartTotal(action.payload);
+        state.itemCount = calculateItemCount(action.payload);
+      }
     },
     
-    updateItemQuantity: (state, action: PayloadAction<{ 
-      productId: number; 
-      quantity: number 
-    }>) => {
+    addItemToCart: (state, action: PayloadAction<AddToCartPayload>) => {
+      const { productId, quantity, productDetails } = action.payload;
+      
+      // Check if item already exists in cart
+      const existingItemIndex = state.items.findIndex((item) => item.productId === productId);
+      const maxQuantity = productDetails.maxQuantity || Infinity;
+      
+      if (existingItemIndex >= 0) {
+        // Update quantity if item exists without exceeding max quantity
+        const newQuantity = state.items[existingItemIndex].quantity + quantity;
+        state.items[existingItemIndex].quantity = Math.min(newQuantity, maxQuantity);
+      } else {
+        // Add new item to cart
+        state.items.push({
+          productId,
+          quantity: Math.min(quantity, maxQuantity),
+          productName: productDetails.name,
+          productPrice: productDetails.price,
+          productImageUrl: productDetails.imageUrl,
+          maxQuantity: productDetails.maxQuantity
+        });
+      }
+      
+      // Update totals
+      state.total = calculateCartTotal(state.items);
+      state.itemCount = calculateItemCount(state.items);
+      
+      // Save to localStorage
+      localStorage.setItem('cart', JSON.stringify(state.items));
+    },
+    
+    updateItemQuantity: (state, action: PayloadAction<{ productId: number, quantity: number }>) => {
       const { productId, quantity } = action.payload;
-      state.cart = updateCartItemQuantityUtil(state.cart, productId, quantity);
+      const item = state.items.find((item) => item.productId === productId);
+      
+      if (item) {
+        // Don't exceed maximum quantity
+        item.quantity = item.maxQuantity ? 
+          Math.min(quantity, item.maxQuantity) : 
+          quantity;
+        
+        // Update totals
+        state.total = calculateCartTotal(state.items);
+        state.itemCount = calculateItemCount(state.items);
+        
+        // Save to localStorage
+        localStorage.setItem('cart', JSON.stringify(state.items));
+      }
     },
     
     removeItem: (state, action: PayloadAction<number>) => {
-      state.cart = removeItemFromCartUtil(state.cart, action.payload);
+      state.items = state.items.filter(item => item.productId !== action.payload);
+      state.total = calculateCartTotal(state.items);
+      state.itemCount = calculateItemCount(state.items);
+      
+      // Save to localStorage after update
+      saveCartToLocalStorage(state.items);
     },
     
     clearCart: (state) => {
-      state.cart = clearCartUtil();
+      state.items = [];
+      state.total = 0;
+      state.itemCount = 0;
+      
+      // Clear localStorage cart
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('cart');
+      }
     },
     
-    setCart: (state, action: PayloadAction<Cart>) => {
-      state.cart = action.payload;
-    }
-  },
-  extraReducers: (builder) => {
-    builder
-      .addCase(syncCart.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(syncCart.fulfilled, (state, action) => {
-        state.cart = action.payload;
-        state.loading = false;
-        state.lastSynced = Date.now();
-      })
-      .addCase(syncCart.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string || 'Failed to sync cart';
-      });
+    setLoading: (state, action: PayloadAction<boolean>) => {
+      state.loading = action.payload;
+    },
   }
 });
 
-// Export actions and reducer
 export const { 
   addItemToCart, 
   updateItemQuantity, 
   removeItem, 
   clearCart,
-  setCart
+  setLoading,
+  initializeCart
 } = cartSlice.actions;
-
 export default cartSlice.reducer;

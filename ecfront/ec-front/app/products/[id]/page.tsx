@@ -4,19 +4,20 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { fetchProductById } from "@/lib/features/products/productSlice";
+import { addItemToCart } from "@/lib/features/cart/cartSlice";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { ChevronLeft, Star, ShoppingCart, MinusCircle, PlusCircle } from "lucide-react";
-import { toast } from "sonner";
+import { ChevronLeft, Star, ShoppingCart, MinusCircle, PlusCircle, AlertCircle } from "lucide-react";
 
 export default function ProductDetailPage() {
     const { id } = useParams();
     const router = useRouter();
     const dispatch = useAppDispatch();
     const { product, loading, error } = useAppSelector((state) => state.products);
+    const cartItems = useAppSelector((state) => state.cart.items);
     const [quantity, setQuantity] = useState(1);
 
     useEffect(() => {
@@ -25,9 +26,36 @@ export default function ProductDetailPage() {
         }
     }, [dispatch, id]);
 
+    // Find this product in the cart (if it exists)
+    const cartItem = product ? cartItems.find(item => item.productId === product.id) : null;
+    const currentCartQuantity = cartItem?.quantity || 0;
+
+    // Calculate max available quantity
+    const maxAvailableQuantity = product ? Math.max(0, product.quantity - currentCartQuantity) : 0;
+    
+    // Reset quantity if we set it too high or if product changes
+    useEffect(() => {
+        if (product) {
+            setQuantity(Math.min(1, maxAvailableQuantity));
+        }
+    }, [product, maxAvailableQuantity]);
+
     const handleAddToCart = () => {
-        // Add to cart logic here
-        toast.success(`Added ${quantity} ${product?.name} to cart`);
+        if (product && quantity > 0 && maxAvailableQuantity > 0) {
+            dispatch(addItemToCart({
+                productId: product.id,
+                quantity: quantity,
+                productDetails: {
+                    name: product.name,
+                    price: product.price,
+                    imageUrl: product.imageUrl,
+                    maxQuantity: product.quantity,
+                }
+            }));
+            
+            // Reset quantity after adding to cart
+            setQuantity(1);
+        }
     };
 
     const decreaseQuantity = () => {
@@ -37,7 +65,7 @@ export default function ProductDetailPage() {
     };
 
     const increaseQuantity = () => {
-        if (product && quantity < product.quantity) {
+        if (quantity < maxAvailableQuantity) {
             setQuantity(quantity + 1);
         }
     };
@@ -71,11 +99,14 @@ export default function ProductDetailPage() {
         );
     }
 
+    const isOutOfStock = product.quantity <= 0 || product.inStock === false;
+    const isMaxCartReached = maxAvailableQuantity <= 0;
+
     return (
         <div className="flex flex-col min-h-screen">
             <Navbar />
 
-            <main className="flex-1 container px-4 py-8 md:px-6 md:py-12">
+            <main className="flex-1 container mx-auto px-4 py-8 md:px-6 md:py-12 max-w-6xl">
                 <div className="mb-6">
                     <Button variant="ghost" onClick={() => router.push("/products")}>
                         <ChevronLeft className="h-4 w-4 mr-2" />
@@ -83,17 +114,18 @@ export default function ProductDetailPage() {
                     </Button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* Product Image */}
-                    <div className="bg-muted rounded-lg overflow-hidden">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-card rounded-lg p-6 shadow-sm">
+                    {/* Product Image - Center the image container */}
+                    <div className="bg-muted rounded-lg overflow-hidden flex items-center justify-center">
                         {product.imageUrl ? (
                             <img
-                                src={product.imageUrl.startsWith('http')
-                                    ? product.imageUrl
-                                    : `http://localhost:8080${product.imageUrl}`}
+                                src={
+                                    product.imageUrl.startsWith("http")
+                                        ? product.imageUrl
+                                        : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/products/images/${product.imageUrl.split('/').pop()}`
+                                }
                                 alt={product.name}
-                                className="w-full h-full object-contain p-4"
-                                style={{ maxHeight: '500px' }}
+                                className="w-full h-full object-contain p-4 max-h-[400px]"
                                 onError={(e) => {
                                     console.error("Image failed to load:", product.imageUrl);
                                     (e.target as HTMLImageElement).src = "/placeholder-image.png";
@@ -104,14 +136,14 @@ export default function ProductDetailPage() {
                                 }}
                             />
                         ) : (
-                            <div className="w-full h-[500px] flex items-center justify-center text-muted-foreground">
+                            <div className="w-full h-[400px] flex items-center justify-center text-muted-foreground">
                                 No image available
                             </div>
                         )}
                     </div>
 
-                    {/* Product Info */}
-                    <div className="space-y-6">
+                    {/* Product Info - Better spacing and alignment */}
+                    <div className="space-y-6 flex flex-col justify-center">
                         <div>
                             <h1 className="text-3xl font-bold">{product.name}</h1>
 
@@ -134,14 +166,28 @@ export default function ProductDetailPage() {
 
                         <div className="bg-muted p-4 rounded-md">
                             <div className="font-medium mb-2">Availability:</div>
-                            {(product.quantity > 0 && product.inStock !== false) ? (
-                                <div className="text-green-600">In Stock ({product.quantity} available)</div>
+                            {isOutOfStock ? (
+                                <div className="text-red-500 flex items-center">
+                                    <AlertCircle className="h-4 w-4 mr-2" />
+                                    Out of Stock
+                                </div>
+                            ) : isMaxCartReached ? (
+                                <div className="text-amber-600">
+                                    Maximum quantity already in cart ({currentCartQuantity})
+                                </div>
                             ) : (
-                                <div className="text-red-500">Out of Stock</div>
+                                <div className="text-green-600">
+                                    In Stock ({maxAvailableQuantity} available)
+                                    {currentCartQuantity > 0 && (
+                                        <div className="text-sm text-muted-foreground mt-1">
+                                            You already have {currentCartQuantity} in your cart
+                                        </div>
+                                    )}
+                                </div>
                             )}
                         </div>
 
-                        {(product.quantity > 0 && product.inStock !== false) && (
+                        {(!isOutOfStock && !isMaxCartReached) ? (
                             <div className="space-y-4">
                                 <div className="flex items-center space-x-4">
                                     <div className="font-medium">Quantity:</div>
@@ -159,31 +205,58 @@ export default function ProductDetailPage() {
                                             variant="outline"
                                             size="icon"
                                             onClick={increaseQuantity}
-                                            disabled={quantity >= product.quantity}
+                                            disabled={quantity >= maxAvailableQuantity}
                                         >
                                             <PlusCircle className="h-4 w-4" />
                                         </Button>
                                     </div>
                                 </div>
 
-                                <Button className="w-full" onClick={handleAddToCart}>
+                                <Button 
+                                    className="w-full" 
+                                    onClick={handleAddToCart}
+                                    disabled={isOutOfStock || isMaxCartReached || quantity <= 0}
+                                >
                                     <ShoppingCart className="h-4 w-4 mr-2" />
                                     Add to Cart
+                                </Button>
+                            </div>
+                        ) : (
+                            <Button 
+                                className="w-full mt-4" 
+                                disabled={true}
+                            >
+                                {isOutOfStock ? (
+                                    <>Out of Stock</>
+                                ) : (
+                                    <>Maximum Quantity in Cart</>
+                                )}
+                            </Button>
+                        )}
+                        
+                        {currentCartQuantity > 0 && (
+                            <div className="mt-2">
+                                <Button 
+                                    variant="outline" 
+                                    className="w-full"
+                                    onClick={() => router.push("/cart")}
+                                >
+                                    View Cart
                                 </Button>
                             </div>
                         )}
                     </div>
                 </div>
 
-                {/* Reviews Section */}
-                <div className="mt-12">
-                    <h2 className="text-2xl font-bold mb-6">Customer Reviews</h2>
+                {/* Reviews Section - Center and constrain width */}
+                <div className="mt-12 max-w-4xl mx-auto">
+                    <h2 className="text-2xl font-bold mb-6 text-center">Customer Reviews</h2>
                     <Separator className="mb-6" />
 
                     {product.feedbacks && product.feedbacks.length > 0 ? (
                         <div className="space-y-6">
                             {product.feedbacks.map((feedback) => (
-                                <Card key={feedback.id}>
+                                <Card key={feedback.id} className="mx-auto">
                                     <CardContent className="p-6">
                                         <div className="flex justify-between items-start">
                                             <div>
