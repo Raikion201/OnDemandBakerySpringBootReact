@@ -88,14 +88,20 @@ export const logoutAsync = createAsyncThunk(
       // Call the logout endpoint
       await axios.post('/api/auth/logout');
       
-      // Clear user from localStorage
-      localStorage.removeItem('user');
+      // Clear both user and admin user from localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('user');
+        localStorage.removeItem('adminUser'); // Also remove admin user
+      }
       
       // Return success
       return true;
     } catch (error: any) {
       // Even if the API call fails, remove user from localStorage
-      localStorage.removeItem('user');
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('user');
+        localStorage.removeItem('adminUser'); // Also remove admin user
+      }
       
       return rejectWithValue(
         error.response?.data?.message || 'Failed to logout'
@@ -113,6 +119,7 @@ const authSlice = createSlice({
       // Also remove from localStorage
       if (typeof window !== 'undefined') {
         localStorage.removeItem('user');
+        localStorage.removeItem('adminUser'); // Also remove admin user
       }
     }
   },

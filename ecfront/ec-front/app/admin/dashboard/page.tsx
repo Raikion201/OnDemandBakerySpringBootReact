@@ -5,7 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminRoute } from "@/components/admin/AdminRoute";
 import { useRouter } from "next/navigation";
 import { useAppSelector, useAppDispatch } from "@/lib/hooks";
-import { adminLogout, checkAdminAuth } from "@/lib/features/admin/adminAuthSlice";
+import {
+  adminLogout,
+  checkAdminAuth,
+} from "@/lib/features/admin/adminAuthSlice";
 import { useEffect, useState } from "react";
 import axios from "@/lib/axiosConfig";
 
@@ -24,29 +27,30 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats>({
     userCount: 0,
     productCount: 0,
-    orderCount: 0
+    orderCount: 0,
   });
 
   const fetchDashboardData = async () => {
     try {
       // Fetch user count
-      const usersResponse = await axios.get('/api/admin/users');
+      const usersResponse = await axios.get("/api/admin/users");
       const userCount = usersResponse.data.length;
-      
+
       // Fetch product count
-      const productsResponse = await axios.get('/api/products');
+      const productsResponse = await axios.get("/api/products");
       const productCount = productsResponse.data.length;
-      
-      // In the future, you might want to fetch order count as well
-      // For now, we'll leave it at 0
-      
+
+      // Fetch order count from our order controller
+      const ordersResponse = await axios.get("/api/orders");
+      const orderCount = ordersResponse.data.length;
+
       setStats({
         userCount,
         productCount,
-        orderCount: 0
+        orderCount,
       });
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      console.error("Error fetching dashboard data:", error);
     }
   };
 
@@ -61,11 +65,9 @@ export default function AdminDashboard() {
         router.push("/admin/login");
       }
     };
-    
+
     checkAuth();
   }, [dispatch, router]);
-
-
 
   const handleLogout = async () => {
     try {
@@ -97,10 +99,16 @@ export default function AdminDashboard() {
             )}
           </div>
           <div className="space-x-4">
-            <Button variant="outline" onClick={() => router.push("/admin/users")}>
+            <Button
+              variant="outline"
+              onClick={() => router.push("/admin/users")}
+            >
               Manage Users
             </Button>
-            <Button variant="outline" onClick={() => router.push("/admin/products")}>
+            <Button
+              variant="outline"
+              onClick={() => router.push("/admin/products")}
+            >
               Manage Products
             </Button>
             <Button onClick={() => router.push("/admin/users/create")}>
@@ -123,7 +131,7 @@ export default function AdminDashboard() {
               <p className="text-sm text-muted-foreground">Total users</p>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader>
               <CardTitle>Products</CardTitle>
@@ -133,7 +141,7 @@ export default function AdminDashboard() {
               <p className="text-sm text-muted-foreground">Total products</p>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader>
               <CardTitle>Orders</CardTitle>
@@ -151,31 +159,41 @@ export default function AdminDashboard() {
               <CardTitle>Recent Activity</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-center text-muted-foreground py-10">No recent activity</p>
+              <p className="text-center text-muted-foreground py-10">
+                No recent activity
+              </p>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button 
-                className="w-full justify-start" 
+              <Button
+                className="w-full justify-start"
                 variant="outline"
                 onClick={() => router.push("/admin/products/create")}
               >
                 Add New Product
               </Button>
-              <Button 
-                className="w-full justify-start" 
+              <Button
+                className="w-full justify-start"
                 variant="outline"
                 onClick={() => router.push("/admin/products")}
               >
                 Manage Products
               </Button>
-              <Button className="w-full justify-start" variant="outline">View Orders</Button>
-              <Button className="w-full justify-start" variant="outline">System Settings</Button>
+              <Button
+                className="w-full justify-start"
+                variant="outline"
+                onClick={() => router.push("/admin/orders")}
+              >
+                View Orders
+              </Button>
+              <Button className="w-full justify-start" variant="outline">
+                System Settings
+              </Button>
             </CardContent>
           </Card>
         </div>

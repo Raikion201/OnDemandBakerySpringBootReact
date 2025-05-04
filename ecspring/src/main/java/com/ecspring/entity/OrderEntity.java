@@ -42,4 +42,32 @@ public class OrderEntity {
     
     @OneToOne(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private InvoiceEntity invoice;
+    
+    @Column(name="payment_method", nullable=false)
+    private String paymentMethod;
+    
+    @Column(name="total_amount")
+    private Double totalAmount;
+    
+    // Add shipping information including first and last name
+    @Column(name="shipping_first_name")
+    private String shippingFirstName;
+    
+    @Column(name="shipping_last_name")
+    private String shippingLastName;
+    
+    @Column(name="shipping_phone")
+    private String shippingPhone;
+    
+    @Column(name="shipping_address")
+    private String shippingAddress;
+    
+    @Column(name="shipping_city")
+    private String shippingCity;
+    
+    @Column(name="shipping_state")
+    private String shippingState;
+    
+    @Column(name="shipping_zip_code")
+    private String shippingZipCode;
 }

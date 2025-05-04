@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { CartComponent } from "@/components/cart/CartComponent";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { logout, logoutAsync } from "@/lib/features/todos/authSlice";
-import axios from "@/lib/axiosConfig";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -91,7 +90,7 @@ export function Navbar() {
                 <span className="cursor-pointer">Welcome, {user.name || user.username}</span>
                 <div className="absolute left-0 mt-2 w-48 bg-card text-card-foreground border rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
                   <a href="#" className="block px-4 py-2 hover:bg-muted/50">Manage Account</a>
-                  <a href="#" className="block px-4 py-2 hover:bg-muted/50">Manage Orders</a>
+                  <Link href="/my-orders" className="block px-4 py-2 hover:bg-muted/50">Manage Orders</Link>
                   {/* replace link with button to invoke logout */}
                   <button
                     onClick={handleLogout}

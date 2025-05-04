@@ -2,6 +2,8 @@ package com.ecspring.services.impl;
 
 import com.ecspring.dto.LineItemDto;
 import com.ecspring.dto.OrderDto;
+import com.ecspring.dto.CheckoutOrderItemDto;
+import com.ecspring.dto.CheckoutRequestDto;
 import com.ecspring.entity.*;
 import com.ecspring.exception.ResourceNotFoundException;
 import com.ecspring.repositories.*;
@@ -166,6 +168,55 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    public List<OrderDto> getOrdersByUsername(String username) {
+        UserEntity user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new ResourceNotFoundException("User not found with username: " + username);
+        }
+        
+        List<OrderEntity> orders = orderRepository.findByUserOrderByOrderDateDesc(user);
+        return orders.stream()
+                .map(order -> {
+                    List<LineItemEntity> items = lineItemRepository.findByOrder(order);
+                    double totalAmount = calculateOrderTotal(items);
+                    return mapToOrderDto(order, items, totalAmount);
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<OrderDto> getOrdersByUserAndStatus(Long userId, String status) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+        
+        List<OrderEntity> orders = orderRepository.findByUserAndStatusOrderByOrderDateDesc(user, status);
+        return orders.stream()
+                .map(order -> {
+                    List<LineItemEntity> items = lineItemRepository.findByOrder(order);
+                    double totalAmount = calculateOrderTotal(items);
+                    return mapToOrderDto(order, items, totalAmount);
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<OrderDto> getOrdersByUsernameAndStatus(String username, String status) {
+        UserEntity user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new ResourceNotFoundException("User not found with username: " + username);
+        }
+        
+        List<OrderEntity> orders = orderRepository.findByUserAndStatusOrderByOrderDateDesc(user, status);
+        return orders.stream()
+                .map(order -> {
+                    List<LineItemEntity> items = lineItemRepository.findByOrder(order);
+                    double totalAmount = calculateOrderTotal(items);
+                    return mapToOrderDto(order, items, totalAmount);
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<OrderDto> getOrdersByStatus(String status) {
         List<OrderEntity> orders = orderRepository.findByStatus(status);
         return orders.stream()
@@ -233,6 +284,81 @@ public class OrderServiceImpl implements OrderService {
         return "ORD-" + dateStr + "-" + randomStr;
     }
 
+    @Override
+    @Transactional
+    public OrderDto createOrderFromRequest(String username, CheckoutRequestDto checkoutRequest) {
+        // Find the user
+        UserEntity user = userRepository.findByUsername(username);
+        
+        // Create new order
+        OrderEntity order = new OrderEntity();
+        order.setOrderNumber(generateOrderNumber());
+        order.setOrderDate(LocalDateTime.now());
+        order.setStatus("PENDING");
+        order.setUser(user);
+        order.setPaymentMethod(checkoutRequest.getPaymentMethod());
+        order.setTotalAmount(checkoutRequest.getTotalAmount());
+        
+        // Set shipping information including name
+        order.setShippingFirstName(checkoutRequest.getCustomerInfo().getFirstName());
+        order.setShippingLastName(checkoutRequest.getCustomerInfo().getLastName());
+        order.setShippingPhone(checkoutRequest.getCustomerInfo().getPhone());
+        order.setShippingAddress(checkoutRequest.getCustomerInfo().getAddress());
+        order.setShippingCity(checkoutRequest.getCustomerInfo().getCity());
+        order.setShippingState(checkoutRequest.getCustomerInfo().getState());
+        order.setShippingZipCode(checkoutRequest.getCustomerInfo().getZipCode());
+        
+        order = orderRepository.save(order);
+        
+        // Create invoice
+        InvoiceEntity invoice = new InvoiceEntity();
+        invoice.setInvoiceNumber("INV-" + order.getOrderNumber());
+        invoice.setDateCreated(LocalDateTime.now());
+        invoice.setOrder(order);
+        invoiceRepository.save(invoice);
+        
+        List<LineItemEntity> orderItems = new ArrayList<>();
+        
+        // Process order items
+        double totalAmount = 0.0;
+        for (CheckoutOrderItemDto itemDto : checkoutRequest.getOrderItems()) {
+            ProductEntity product = productRepository.findById(itemDto.getProductId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + itemDto.getProductId()));
+            
+            // Check if product is in stock
+            if (product.getQuantity() < itemDto.getQuantity()) {
+                throw new IllegalStateException("Not enough stock for product: " + product.getName());
+            }
+            
+            // Create line item
+            LineItemEntity orderItem = new LineItemEntity();
+            orderItem.setProduct(product);
+            orderItem.setQuantity(itemDto.getQuantity());
+            orderItem.setOrder(order);
+            orderItem = lineItemRepository.save(orderItem);
+            orderItems.add(orderItem);
+            
+            // Update product stock
+            product.setQuantity(product.getQuantity() - itemDto.getQuantity());
+            productRepository.save(product);
+            
+            // Calculate item total
+            totalAmount += product.getPrice() * itemDto.getQuantity();
+        }
+        
+        // If not a direct purchase, clear cart
+        if (!checkoutRequest.getDirectPurchase()) {
+            CartEntity cart = cartRepository.findByUser(user).orElse(null);
+            if (cart != null) {
+                List<LineItemEntity> cartItems = lineItemRepository.findByCart(cart);
+                lineItemRepository.deleteAll(cartItems);
+            }
+        }
+        
+        // Return order DTO with the correct number of arguments
+        return mapToOrderDto(order, orderItems, totalAmount);
+    }
+
     // Helper methods
     private OrderDto mapToOrderDto(OrderEntity order, List<LineItemEntity> items, double totalAmount) {
         OrderDto orderDto = new OrderDto();
@@ -243,6 +369,16 @@ public class OrderServiceImpl implements OrderService {
         orderDto.setUserId(order.getUser().getId());
         orderDto.setUserName(order.getUser().getName());
         orderDto.setTotalAmount(totalAmount);
+        orderDto.setPaymentMethod(order.getPaymentMethod());
+        
+        // Map shipping information
+        orderDto.setShippingFirstName(order.getShippingFirstName());
+        orderDto.setShippingLastName(order.getShippingLastName());
+        orderDto.setShippingPhone(order.getShippingPhone());
+        orderDto.setShippingAddress(order.getShippingAddress());
+        orderDto.setShippingCity(order.getShippingCity());
+        orderDto.setShippingState(order.getShippingState());
+        orderDto.setShippingZipCode(order.getShippingZipCode());
         
         List<LineItemDto> lineItemDtos = items.stream()
                 .map(this::mapToLineItemDto)

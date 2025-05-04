@@ -1,8 +1,11 @@
 package com.ecspring.controllers;
 
 import com.ecspring.dto.OrderDto;
+import com.ecspring.dto.CheckoutRequestDto;
+import com.ecspring.exception.ResourceNotFoundException;
 import com.ecspring.security.services.UserDetailsImpl;
 import com.ecspring.services.OrderService;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -30,14 +33,15 @@ public class OrderController {
         this.orderService = orderService;
     }
 
-    // Create order from user's cart
-    @PostMapping("/checkout")
-    public ResponseEntity<?> createOrder(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+    // Create order from checkout request
+    @PostMapping("/checkout")  // Keep this as "/checkout"
+    public ResponseEntity<?> createOrderFromRequest(
+            @RequestBody @Valid CheckoutRequestDto checkoutRequest,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
         try {
-            OrderDto newOrder = orderService.createOrderFromCart(userDetails.getId());
+            OrderDto newOrder = orderService.createOrderFromRequest(userDetails.getUsername(), checkoutRequest);
             return new ResponseEntity<>(newOrder, HttpStatus.CREATED);
         } catch (Exception e) {
-            log.error("Error creating order: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", e.getMessage()));
         }
@@ -95,11 +99,76 @@ public class OrderController {
         }
     }
 
-    // Get user's orders
-    @GetMapping("/my-orders")
-    public ResponseEntity<?> getUserOrders(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+    // Update order status (accessible to both user and admin)
+    @PutMapping("/{id}/status")
+    public ResponseEntity<?> updateOrderStatus(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> statusUpdate,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        
         try {
-            List<OrderDto> orders = orderService.getOrdersByUser(userDetails.getId());
+            if (userDetails == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("error", "You must be logged in to update an order"));
+            }
+            
+            String newStatus = statusUpdate.get("status");
+            if (newStatus == null || newStatus.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Status cannot be empty"));
+            }
+            
+            // Get the order to check ownership
+            OrderDto order = orderService.getOrderById(id);
+            String orderUsername = userDetails.getUsername();
+                    
+            // Check if user is admin or order owner
+            boolean isAdmin = userDetails.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || 
+                                  a.getAuthority().equals("ROLE_STAFF") ||
+                                  a.getAuthority().equals("ROLE_OWNER"));
+            
+            boolean isOrderOwner = userDetails.getUsername().equals(orderUsername);
+            
+            // Regular users can only change to CANCELLED and only their own PENDING orders
+            if (!isAdmin && (!isOrderOwner || 
+                             !order.getStatus().equals("PENDING") ||
+                             !newStatus.equals("CANCELLED"))) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of("error", "You can only cancel your own pending orders"));
+            }
+            
+            OrderDto updatedOrder = orderService.updateOrderStatus(id, newStatus.toUpperCase());
+            return ResponseEntity.ok(updatedOrder);
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            log.error("Error updating order status: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // Get user's orders with filtering options
+    @GetMapping("/my-orders")
+    public ResponseEntity<?> getUserOrders(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @RequestParam(required = false) String status) {
+        try {
+            if (userDetails == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("error", "You must be logged in to view your orders"));
+            }
+            
+            List<OrderDto> orders;
+            
+            // If status filter is provided, filter the user's orders by status
+            if (status != null && !status.trim().isEmpty()) {
+                orders = orderService.getOrdersByUsernameAndStatus(userDetails.getUsername(), status.toUpperCase());
+            } else {
+                orders = orderService.getOrdersByUsername(userDetails.getUsername());
+            }
+            
             return ResponseEntity.ok(orders);
         } catch (Exception e) {
             log.error("Error fetching user orders: {}", e.getMessage());
@@ -108,9 +177,8 @@ public class OrderController {
         }
     }
 
-    // Get all orders (admin only)
     @GetMapping
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_STAFF')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_STAFF','ROLE_OWNER')")
     public ResponseEntity<?> getAllOrders() {
         try {
             return ResponseEntity.ok(orderService.getAllOrders());
@@ -123,7 +191,7 @@ public class OrderController {
 
     // Get orders by status (admin only)
     @GetMapping("/status/{status}")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_STAFF')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_STAFF','ROLE_OWNER')")
     public ResponseEntity<?> getOrdersByStatus(@PathVariable String status) {
         try {
             return ResponseEntity.ok(orderService.getOrdersByStatus(status.toUpperCase()));
@@ -136,7 +204,7 @@ public class OrderController {
 
     // Get orders by date range (admin only)
     @GetMapping("/date-range")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_STAFF')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_STAFF','ROLE_OWNER')")
     public ResponseEntity<?> getOrdersByDateRange(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
@@ -149,31 +217,9 @@ public class OrderController {
         }
     }
 
-    // Update order status (admin only)
-    @PutMapping("/{id}/status")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_STAFF')")
-    public ResponseEntity<?> updateOrderStatus(
-            @PathVariable Long id,
-            @RequestBody Map<String, String> statusUpdate) {
-        
-        try {
-            String newStatus = statusUpdate.get("status");
-            if (newStatus == null || newStatus.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Status cannot be empty"));
-            }
-            
-            OrderDto updatedOrder = orderService.updateOrderStatus(id, newStatus.toUpperCase());
-            return ResponseEntity.ok(updatedOrder);
-        } catch (Exception e) {
-            log.error("Error updating order status: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", e.getMessage()));
-        }
-    }
-
     // Delete order (admin only)
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_STAFF','ROLE_OWNER')")
     public ResponseEntity<?> deleteOrder(@PathVariable Long id) {
         try {
             orderService.deleteOrder(id);

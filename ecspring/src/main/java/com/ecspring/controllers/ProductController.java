@@ -111,7 +111,7 @@ public class ProductController {
 
     // Upload product image
     @PostMapping("/{id}/image")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_STAFF')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_OWNER')")
     public ResponseEntity<Map<String, String>> uploadProductImage(
             @PathVariable Long id,
             @RequestParam("file") MultipartFile file) {

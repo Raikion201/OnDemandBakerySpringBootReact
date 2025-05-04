@@ -1,112 +1,127 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { Loader2Icon } from "lucide-react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
+import * as z from "zod";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { adminLogin } from "@/lib/features/admin/adminAuthSlice";
-import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
+import axios from "@/lib/axiosConfig";
 
-const adminLoginSchema = z.object({
-  loginID: z.string().min(1, "Username or email is required"),
-  password: z.string().min(1, "Password is required"),
+// Form schema
+const formSchema = z.object({
+  loginID: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required"), 
 });
 
-type AdminLoginValues = z.infer<typeof adminLoginSchema>;
+type FormValues = z.infer<typeof formSchema>;
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const dispatch = useAppDispatch();
-  const { loading, error, isAuthenticated } = useAppSelector((state) => state.adminAuth);
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<AdminLoginValues>({
-    resolver: zodResolver(adminLoginSchema),
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      loginID: "",
+      password: "",
+    },
   });
-
-  useEffect(() => {
-    // If already authenticated as admin, redirect to dashboard
-    if (isAuthenticated) {
-      router.push("/admin/dashboard");
-    }
-  }, [isAuthenticated, router]);
-
-  const onSubmit = async (data: AdminLoginValues) => {
+  
+  const onSubmit = async (data: FormValues) => {
     try {
-      await dispatch(adminLogin(data)).unwrap();
-      toast.success("Admin login successful!");
-      router.push("/admin/dashboard");
-    } catch (err) {
-      toast.error(typeof err === "string" ? err : "Admin login failed");
+      setLoading(true);
+      setError(null);
+      
+      const response = await axios.post('/api/admin/login', data);
+      
+      // Store admin user in localStorage or state management
+      if (response.data) {
+        // Redirect to admin dashboard
+        router.push('/admin/dashboard');
+      }
+    } catch (err: any) {
+      setError(err.response?.data || 'Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
     }
   };
-
+  
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl text-center">Admin Login</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div className="space-y-4">
-              <div className="grid gap-2">
-                <Label htmlFor="loginID">Username/Email</Label>
-                <Input
-                  id="loginID"
-                  {...register("loginID")}
-                  placeholder="Username/Email"
-                  disabled={loading}
-                />
-                {errors.loginID && (
-                  <p className="text-sm text-red-500">
-                    {errors.loginID.message}
-                  </p>
+    <div className="min-h-screen flex flex-col">
+      {/* Removed the Logo Section that was positioned in top left */}
+      
+      {/* Center the login card */}
+      <div className="flex-1 flex items-center justify-center p-6 md:p-10">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl text-center">Admin Login</CardTitle>
+            <CardDescription className="text-center">
+              Enter your credentials to access the admin panel
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit(onSubmit)}>
+              <div className="grid gap-4">
+                {error && (
+                  <div className="p-3 rounded-md bg-destructive/10 text-destructive text-sm">
+                    {error}
+                  </div>
                 )}
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="loginID">Username</Label>
+                  <Input
+                    id="loginID"
+                    {...register("loginID")}
+                    placeholder="Enter your username"
+                    disabled={loading}
+                  />
+                  {errors.loginID && (
+                    <p className="text-sm text-destructive">{errors.loginID.message}</p>
+                  )}
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    {...register("password")}
+                    placeholder="Enter your password"
+                    disabled={loading}
+                  />
+                  {errors.password && (
+                    <p className="text-sm text-destructive">{errors.password.message}</p>
+                  )}
+                </div>
+                
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    "Sign In"
+                  )}
+                </Button>
               </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  {...register("password")}
-                  placeholder="Password"
-                  disabled={loading}
-                />
-                {errors.password && (
-                  <p className="text-sm text-red-500">
-                    {errors.password.message}
-                  </p>
-                )}
-              </div>
-
-              {error && <p className="text-sm text-red-500">{error}</p>}
-
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-                    Logging in...
-                  </>
-                ) : (
-                  "Admin Login"
-                )}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+            </form>
+          </CardContent>
+          <CardFooter className="flex flex-col">
+            <p className="text-center text-sm text-muted-foreground">
+              This area is restricted to authorized personnel only
+            </p>
+          </CardFooter>
+        </Card>
+      </div>
     </div>
   );
 }

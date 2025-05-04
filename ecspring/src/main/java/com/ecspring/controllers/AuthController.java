@@ -22,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -179,6 +180,20 @@ public class AuthController {
                         log.error("Error sending password reset email: {}", e.getMessage());
                         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                                         .body("Failed to send password reset email. Please try again.");
+                }
+        }
+
+        @GetMapping("/me")
+        public ResponseEntity<?> getCurrentUser(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+                if (userDetails != null) {
+                        // Return user information
+                        return ResponseEntity.ok(
+                                new AuthResponseDto(
+                                        userDetails.getName(),
+                                        userDetails.getUsername(),
+                                        userDetails.getEmail()));
+                } else {
+                        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
                 }
         }
 
