@@ -125,7 +125,7 @@ export default function AdminOrdersPage() {
   };
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto p-6 max-w-[1200px]">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Order Management</h1>
         <div className="flex items-center space-x-2">
@@ -157,14 +157,14 @@ export default function AdminOrdersPage() {
         </div>
       </div>
 
-      <Card>
+      <Card className="mx-auto">
         <CardHeader>
           <CardTitle>Orders</CardTitle>
           <CardDescription>
             Manage and view all customer orders
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex justify-center">
           {loading ? (
             <div className="text-center p-4">Loading orders...</div>
           ) : error ? (
@@ -172,7 +172,7 @@ export default function AdminOrdersPage() {
           ) : orders.length === 0 ? (
             <div className="text-center p-4">No orders found</div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto w-full">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -205,7 +205,7 @@ export default function AdminOrdersPage() {
                       </TableCell>
                       <TableCell>{order.paymentMethod}</TableCell>
                       <TableCell>
-                        <div className="flex flex-col md:flex-row gap-2">
+                        <div className="flex flex-col md:flex-row gap-2 justify-center">
                           <Button
                             variant="outline"
                             size="sm"

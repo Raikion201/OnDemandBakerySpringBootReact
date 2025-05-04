@@ -168,6 +168,55 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    public List<OrderDto> getOrdersByUsername(String username) {
+        UserEntity user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new ResourceNotFoundException("User not found with username: " + username);
+        }
+        
+        List<OrderEntity> orders = orderRepository.findByUserOrderByOrderDateDesc(user);
+        return orders.stream()
+                .map(order -> {
+                    List<LineItemEntity> items = lineItemRepository.findByOrder(order);
+                    double totalAmount = calculateOrderTotal(items);
+                    return mapToOrderDto(order, items, totalAmount);
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<OrderDto> getOrdersByUserAndStatus(Long userId, String status) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+        
+        List<OrderEntity> orders = orderRepository.findByUserAndStatusOrderByOrderDateDesc(user, status);
+        return orders.stream()
+                .map(order -> {
+                    List<LineItemEntity> items = lineItemRepository.findByOrder(order);
+                    double totalAmount = calculateOrderTotal(items);
+                    return mapToOrderDto(order, items, totalAmount);
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<OrderDto> getOrdersByUsernameAndStatus(String username, String status) {
+        UserEntity user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new ResourceNotFoundException("User not found with username: " + username);
+        }
+        
+        List<OrderEntity> orders = orderRepository.findByUserAndStatusOrderByOrderDateDesc(user, status);
+        return orders.stream()
+                .map(order -> {
+                    List<LineItemEntity> items = lineItemRepository.findByOrder(order);
+                    double totalAmount = calculateOrderTotal(items);
+                    return mapToOrderDto(order, items, totalAmount);
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<OrderDto> getOrdersByStatus(String status) {
         List<OrderEntity> orders = orderRepository.findByStatus(status);
         return orders.stream()
