@@ -15,14 +15,15 @@ import {
   Plus, 
   Trash2,
 } from 'lucide-react';
-// Remove toast import
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { 
   clearCart, 
   removeItem, 
-  updateItemQuantity
+  updateItemQuantity,
+  initializeCart
 } from '@/lib/features/cart/cartSlice';
+import { useEffect } from 'react';
 
 interface CartComponentProps {
   variant?: 'icon' | 'button';
@@ -39,14 +40,35 @@ export function CartComponent({ variant = 'icon' }: CartComponentProps) {
   const itemCount = cartState?.itemCount || 0;
   const loading = cartState?.loading || false;
   
+  // Load cart from localStorage when component mounts
+  useEffect(() => {
+    const loadCartFromLocalStorage = () => {
+      try {
+        const savedCart = localStorage.getItem('cart');
+        if (savedCart) {
+          const parsedCart = JSON.parse(savedCart);
+          if (Array.isArray(parsedCart) && parsedCart.length > 0) {
+            dispatch(initializeCart(parsedCart));
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load cart from localStorage:', error);
+      }
+    };
+
+    // Only run if cart is empty - this prevents overwriting current cart state
+    if (items.length === 0) {
+      loadCartFromLocalStorage();
+    }
+  }, [dispatch, items.length]);
+  
   // Handle quantity changes
-  const handleQuantityChange = (productId: number, newQuantity: number) => {
+  const handleQuantityChange = (productId: number, newQuantity: number, maxQuantity: number = Infinity) => {
     if (newQuantity <= 0) {
       // Remove item
       dispatch(removeItem(productId));
-      // Remove toast notification
-    } else {
-      // Update quantity
+    } else if (newQuantity <= maxQuantity) {
+      // Only update if the new quantity doesn't exceed available stock
       dispatch(updateItemQuantity({ productId, quantity: newQuantity }));
     }
   };
@@ -54,7 +76,6 @@ export function CartComponent({ variant = 'icon' }: CartComponentProps) {
   // Clear the cart
   const handleClearCart = () => {
     dispatch(clearCart());
-    // Remove toast notification
   };
 
   // Format price
@@ -68,7 +89,6 @@ export function CartComponent({ variant = 'icon' }: CartComponentProps) {
   // Handle checkout
   const handleCheckout = () => {
     if (items.length === 0) {
-      // Remove toast notification
       return;
     }
     
@@ -129,10 +149,11 @@ export function CartComponent({ variant = 'icon' }: CartComponentProps) {
               <div className="h-16 w-16 bg-muted rounded-md flex-shrink-0 flex items-center justify-center">
                 {item.productImageUrl ? (
                   <img 
-                    src={
-                      item.productImageUrl.startsWith("http")
-                        ? item.productImageUrl
-                        : `http://localhost:8080${item.productImageUrl}`
+                  src={
+                    item.productImageUrl.startsWith("http")
+                        ? product.imageUrl
+                        : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/products/images/${item.productImageUrl.split('/').pop()}`
+                
                     }
                     alt={item.productName || 'Product'} 
                     className="h-full w-full object-cover rounded-md"
@@ -145,6 +166,7 @@ export function CartComponent({ variant = 'icon' }: CartComponentProps) {
                       };
                     }}
                   />
+          
                 ) : (
                   <div className="text-xs text-muted-foreground">No image</div>
                 )}
@@ -184,8 +206,8 @@ export function CartComponent({ variant = 'icon' }: CartComponentProps) {
                       variant="ghost" 
                       size="icon" 
                       className="h-8 w-8 rounded-none"
-                      onClick={() => handleQuantityChange(item.productId, item.quantity + 1)}
-                      disabled={loading}
+                      onClick={() => handleQuantityChange(item.productId, item.quantity + 1, item.maxQuantity)}
+                      disabled={loading || item.quantity >= (item.maxQuantity || 0)}
                     >
                       <Plus className="h-3 w-3" />
                     </Button>
@@ -195,6 +217,13 @@ export function CartComponent({ variant = 'icon' }: CartComponentProps) {
                     {formatPrice((item.productPrice || 0) * item.quantity)}
                   </div>
                 </div>
+                
+                {/* Show stock availability message if needed */}
+                {item.maxQuantity && item.quantity >= item.maxQuantity && (
+                  <div className="text-xs text-amber-600 mt-1">
+                    Max quantity reached
+                  </div>
+                )}
               </div>
             </div>
           ))}

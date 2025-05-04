@@ -3,8 +3,24 @@ import axios from '@/lib/axiosConfig'; // Adjust the path to your axios configur
 import { AuthResponse, AuthState } from '@/types/auth';
 import { RootState } from '@/lib/store';
 
+// Load user from localStorage if available
+const loadUserFromStorage = (): any => {
+  if (typeof window !== 'undefined') {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        return JSON.parse(storedUser);
+      } catch (error) {
+        console.error('Failed to parse user from localStorage:', error);
+        return null;
+      }
+    }
+  }
+  return null;
+};
+
 const initialState: AuthState = {
-  user: null,
+  user: loadUserFromStorage(),
   loading: false,
   error: null
 };
@@ -21,7 +37,11 @@ export const register = createAsyncThunk(
       const response = await axios.post<AuthResponse>(
         'http://localhost:8080/api/auth/register',
         userData
-      );      
+      );  
+      
+      // Store user in localStorage
+      localStorage.setItem('user', JSON.stringify(response.data));
+      
       return response.data;
     } catch (error: unknown) {
       console.log(error)
@@ -45,7 +65,9 @@ export const login = createAsyncThunk(
         userData
       );
       
-      // Store tokens in localStorage
+      // Store user in localStorage
+      localStorage.setItem('user', JSON.stringify(response.data));
+      
       console.log(response)
       return response.data;
     } catch (error) {
@@ -58,12 +80,40 @@ export const login = createAsyncThunk(
   }
 );
 
+// Add an async thunk for logout to handle API call
+export const logoutAsync = createAsyncThunk(
+  'auth/logoutAsync',
+  async (_, { rejectWithValue }) => {
+    try {
+      // Call the logout endpoint
+      await axios.post('/api/auth/logout');
+      
+      // Clear user from localStorage
+      localStorage.removeItem('user');
+      
+      // Return success
+      return true;
+    } catch (error: any) {
+      // Even if the API call fails, remove user from localStorage
+      localStorage.removeItem('user');
+      
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to logout'
+      );
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
     logout: (state) => {
       state.user = null;
+      // Also remove from localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('user');
+      }
     }
   },
   extraReducers: (builder) => {
@@ -94,6 +144,16 @@ const authSlice = createSlice({
         console.log(state)
         state.loading = false;
         state.error = action.payload as string;
+      })
+      // Add case for logout async thunk
+      .addCase(logoutAsync.fulfilled, (state) => {
+        state.user = null;
+        state.loading = false;
+      })
+      .addCase(logoutAsync.rejected, (state) => {
+        // Even if the API call fails, we should still log out locally
+        state.user = null;
+        state.loading = false;
       });
   },
 });

@@ -3,13 +3,15 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { CartComponent } from "@/components/cart/CartComponent";
-import { useAppSelector } from "@/lib/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import { logout, logoutAsync } from "@/lib/features/todos/authSlice";
 import axios from "@/lib/axiosConfig";
 
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const user = useAppSelector((state) => state.auth.user);
+  const dispatch = useAppDispatch();
 
   const handleAuthNav = (path: string) => {
     if (!['/login','/sign-up'].includes(pathname)) {
@@ -21,10 +23,19 @@ export function Navbar() {
   // add logout handler
   const handleLogout = async () => {
     try {
-      await axios.post("/api/auth/logout");
-      router.push("/login");
+      // Call the logout API endpoint through the async thunk
+      await dispatch(logoutAsync()).unwrap();
+      
+      // Manually update auth state (optional, as the thunk will do this too)
+      dispatch(logout());
+      
+      // Stay on the current page instead of redirecting to login
+      // Just refresh the component state to show logged-out UI
+      // No need to reload or navigate away
     } catch (error) {
-      console.error("Error logging out:", error);
+      console.error('Error logging out:', error);
+      // Still logout locally even if API fails
+      dispatch(logout());
     }
   };
 
