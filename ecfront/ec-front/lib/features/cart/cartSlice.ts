@@ -17,6 +17,7 @@ export interface CartState {
   itemCount: number;
   loading: boolean;
   error: string | null;
+  directCheckoutItem: CartItem | null; // Add this for direct checkout
 }
 
 // Define the shape of the payload for addItemToCart action
@@ -70,7 +71,8 @@ const initialState: CartState = {
   total: 0,
   itemCount: 0,
   loading: false,
-  error: null
+  error: null,
+  directCheckoutItem: null // Initialize direct checkout item
 };
 
 // Set initial totals based on loaded items
@@ -165,6 +167,16 @@ const cartSlice = createSlice({
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
     },
+    
+    // Add reducer for setting direct checkout item
+    setDirectCheckoutItem: (state, action: PayloadAction<CartItem | null>) => {
+      state.directCheckoutItem = action.payload;
+    },
+    
+    // Add reducer for clearing direct checkout item
+    clearDirectCheckoutItem: (state) => {
+      state.directCheckoutItem = null;
+    },
   }
 });
 
@@ -174,6 +186,8 @@ export const {
   removeItem, 
   clearCart,
   setLoading,
-  initializeCart
+  initializeCart,
+  setDirectCheckoutItem,
+  clearDirectCheckoutItem
 } = cartSlice.actions;
 export default cartSlice.reducer;

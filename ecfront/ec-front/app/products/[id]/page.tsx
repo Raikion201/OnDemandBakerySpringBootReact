@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { fetchProductById } from "@/lib/features/products/productSlice";
-import { addItemToCart } from "@/lib/features/cart/cartSlice";
+import { addItemToCart, setDirectCheckoutItem } from "@/lib/features/cart/cartSlice";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -55,6 +55,26 @@ export default function ProductDetailPage() {
             
             // Reset quantity after adding to cart
             setQuantity(1);
+        }
+    };
+
+    const handleBuyNow = () => {
+        if (product && quantity > 0 && maxAvailableQuantity > 0) {
+            // Create a cart item for direct checkout
+            const directCheckoutItem = {
+                productId: product.id,
+                quantity: quantity,
+                productName: product.name,
+                productPrice: product.price,
+                productImageUrl: product.imageUrl,
+                maxQuantity: product.quantity
+            };
+            
+            // Set this as the direct checkout item
+            dispatch(setDirectCheckoutItem(directCheckoutItem));
+            
+            // Navigate to checkout page
+            router.push("/checkout?direct=true");
         }
     };
 
@@ -212,14 +232,25 @@ export default function ProductDetailPage() {
                                     </div>
                                 </div>
 
-                                <Button 
-                                    className="w-full" 
-                                    onClick={handleAddToCart}
-                                    disabled={isOutOfStock || isMaxCartReached || quantity <= 0}
-                                >
-                                    <ShoppingCart className="h-4 w-4 mr-2" />
-                                    Add to Cart
-                                </Button>
+                                <div className="flex gap-4 mt-4">
+                                    <Button 
+                                        className="flex-1" 
+                                        onClick={handleAddToCart}
+                                        disabled={isOutOfStock || isMaxCartReached || quantity <= 0}
+                                    >
+                                        <ShoppingCart className="h-4 w-4 mr-2" />
+                                        Add to Cart
+                                    </Button>
+                                    
+                                    <Button 
+                                        className="flex-1" 
+                                        variant="secondary"
+                                        onClick={handleBuyNow}
+                                        disabled={isOutOfStock || isMaxCartReached || quantity <= 0}
+                                    >
+                                        Buy Now
+                                    </Button>
+                                </div>
                             </div>
                         ) : (
                             <Button 

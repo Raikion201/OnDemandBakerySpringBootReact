@@ -109,7 +109,6 @@ export default function CreateProductPage() {
             console.error("Failed to upload image:", imageError);
           }
         }
-        
       } 
       // Create new product if productId doesn't exist
       else {
@@ -143,8 +142,10 @@ export default function CreateProductPage() {
             console.error("Failed to upload image:", imageError);
           }
         }
+      } // Added the missing closing brace here
     } catch (error) {
       // Remove toast notification
+      console.error("Error saving product:", error);
     } finally {
       setLoading(false);
     }

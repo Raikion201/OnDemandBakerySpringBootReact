@@ -1,24 +1,23 @@
 "use client";
 
-import { useState } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useAppSelector, useAppDispatch } from "@/lib/hooks";
-import { clearCart } from "@/lib/features/cart/cartSlice";
+import { clearCart, clearDirectCheckoutItem } from "@/lib/features/cart/cartSlice";
 import axios from "@/lib/axiosConfig";
 import { ChevronLeft } from "lucide-react";
 
-// Schema for checkout form validation
+// Update the checkout schema to only allow "cash" payment method
 const checkoutSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
@@ -28,39 +27,87 @@ const checkoutSchema = z.object({
   city: z.string().min(1, "City is required"),
   state: z.string().min(1, "State is required"),
   zipCode: z.string().min(5, "ZIP code must be at least 5 digits"),
-  paymentMethod: z.enum(["credit", "paypal", "cash"], {
-    required_error: "Payment method is required",
-  }),
+  paymentMethod: z.literal("cash"), // Changed to only accept "cash"
 });
 
 type CheckoutFormValues = z.infer<typeof checkoutSchema>;
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
   const [submitting, setSubmitting] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   
-  // Get cart items from Redux store
+  // Get values from cart state
   const cartItems = useAppSelector((state) => state.cart.items);
   const cartTotal = useAppSelector((state) => state.cart.total);
   const user = useAppSelector((state) => state.auth.user);
+  const directCheckoutItem = useAppSelector((state) => state.cart.directCheckoutItem);
   
-  // Check if cart is empty and redirect if needed
-  if (cartItems.length === 0 && !orderPlaced) {
-    // Only redirect on client-side
-    if (typeof window !== 'undefined') {
+  // Check if this is a direct checkout
+  const isDirect = searchParams.get('direct') === 'true';
+  
+  // Calculate checkout items and total
+  const checkoutItems = isDirect && directCheckoutItem 
+    ? [directCheckoutItem] 
+    : cartItems;
+  
+  const checkoutTotal = isDirect && directCheckoutItem 
+    ? directCheckoutItem.productPrice * directCheckoutItem.quantity 
+    : cartTotal;
+  
+  // Format price with currency
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(price);
+  };
+  
+  // Check if user is authenticated and redirect to login if not
+  useEffect(() => {
+    if (!user) {
+      // Save current URL to redirect back after login
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('redirectAfterLogin', window.location.pathname + window.location.search);
+      }
+      
+      // Redirect to login page
+      router.push('/login');
+    }
+  }, [user, router]);
+  
+  // Redirect if there are no items to check out
+  useEffect(() => {
+    if ((isDirect && !directCheckoutItem) || (!isDirect && cartItems.length === 0) && !orderPlaced) {
       router.push("/products");
     }
-  }
+  }, [isDirect, directCheckoutItem, cartItems, orderPlaced, router]);
   
+  // Don't render the checkout page if user is not authenticated
+  if (!user) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
+        <main className="flex-1 container px-4 py-8 md:px-6 md:py-12 flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">Authentication Required</h2>
+            <p className="mb-6">Please log in to continue with checkout.</p>
+            <div className="animate-pulse">Redirecting to login page...</div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   // Form initialization
   const {
     register,
     handleSubmit,
     formState: { errors },
-    watch,
     control,
   } = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutSchema),
@@ -73,27 +120,16 @@ export default function CheckoutPage() {
       city: "",
       state: "",
       zipCode: "",
-      paymentMethod: "credit",
+      paymentMethod: "cash", // Set default to "cash"
     },
   });
-
-  // Watch payment method to show appropriate fields
-  const paymentMethod = watch("paymentMethod");
-
-  // Format price with currency
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(price);
-  };
 
   // Handle form submission
   const onSubmit = async (data: CheckoutFormValues) => {
     setSubmitting(true);
     
     try {
-      // Create order payload
+      // Create order payload based on whether this is a direct checkout or cart checkout
       const orderPayload = {
         customerInfo: {
           firstName: data.firstName,
@@ -105,28 +141,32 @@ export default function CheckoutPage() {
           state: data.state,
           zipCode: data.zipCode,
         },
-        orderItems: cartItems.map(item => ({
+        orderItems: checkoutItems.map(item => ({
           productId: item.productId,
           quantity: item.quantity,
           price: item.productPrice,
         })),
         paymentMethod: data.paymentMethod,
-        totalAmount: cartTotal,
+        totalAmount: checkoutTotal,
+        directPurchase: isDirect
       };
 
-      // In a real application, you would send this to your backend
-      // For now, let's simulate a successful order
-      // const response = await axios.post('/api/orders', orderPayload);
+      // In a real application, send to your backend
+      // const response = await axios.post('/api/orders/checkout', orderPayload);
       
-      // Simulate API response
+      // For now, simulate API response
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       // Generate a random order number
       const generatedOrderNumber = `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
       setOrderNumber(generatedOrderNumber);
       
-      // Clear the cart
-      dispatch(clearCart());
+      // Clear relevant state based on checkout type
+      if (isDirect) {
+        dispatch(clearDirectCheckoutItem());
+      } else {
+        dispatch(clearCart());
+      }
       
       // Set order as placed
       setOrderPlaced(true);
@@ -182,11 +222,20 @@ export default function CheckoutPage() {
       
       <main className="flex-1 container px-4 py-8 md:px-6 md:py-12 mx-auto max-w-6xl">
         <div className="mb-8 text-center">
-          <Button variant="ghost" onClick={() => router.back()} className="self-start mb-4">
+          <Button 
+            variant="ghost" 
+            onClick={() => router.back()} 
+            className="self-start mb-4"
+          >
             <ChevronLeft className="h-4 w-4 mr-2" />
-            Back to Cart
+            {isDirect ? "Back to Product" : "Back to Cart"}
           </Button>
           <h1 className="text-3xl font-bold">Checkout</h1>
+          {isDirect && (
+            <p className="text-muted-foreground mt-2">
+              You are checking out with a direct purchase
+            </p>
+          )}
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
@@ -318,69 +367,26 @@ export default function CheckoutPage() {
                   <CardTitle>Payment Method</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Use Controller for RadioGroup component */}
-                  <Controller
-                    name="paymentMethod"
-                    control={control}
-                    render={({ field }) => (
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        value={field.value}
-                        className="space-y-3"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="credit" id="payment-credit" />
-                          <Label htmlFor="payment-credit">Credit Card</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="paypal" id="payment-paypal" />
-                          <Label htmlFor="payment-paypal">PayPal</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="cash" id="payment-cash" />
-                          <Label htmlFor="payment-cash">Cash on Delivery</Label>
-                        </div>
-                      </RadioGroup>
-                    )}
-                  />
+                  {/* Replace the RadioGroup with a simple display of Cash on Delivery */}
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="hidden"
+                      {...register("paymentMethod")}
+                      value="cash"
+                    />
+                    <div className="flex items-center p-4 border rounded-md bg-muted/50 w-full">
+                      <div className="w-4 h-4 rounded-full bg-primary mr-3"></div>
+                      <div>
+                        <p className="font-medium">Cash on Delivery</p>
+                        <p className="text-sm text-muted-foreground">
+                          Pay with cash when your order is delivered
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                   
                   {errors.paymentMethod && (
                     <p className="text-red-500 text-sm">{errors.paymentMethod.message}</p>
-                  )}
-                  
-                  {/* Credit Card Fields (simplified for demo purposes) */}
-                  {paymentMethod === "credit" && (
-                    <div className="mt-4 space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="cardNumber">Card Number</Label>
-                        <Input 
-                          id="cardNumber" 
-                          placeholder="1234 5678 9012 3456" 
-                          disabled={submitting} 
-                        />
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="expiryDate">Expiry Date</Label>
-                          <Input 
-                            id="expiryDate" 
-                            placeholder="MM/YY" 
-                            disabled={submitting} 
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="cvv">CVV</Label>
-                          <Input 
-                            id="cvv" 
-                            placeholder="123" 
-                            disabled={submitting} 
-                          />
-                        </div>
-                      </div>
-                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -396,7 +402,7 @@ export default function CheckoutPage() {
               <CardContent className="space-y-4">
                 {/* Items List */}
                 <div className="space-y-4">
-                  {cartItems.map((item) => (
+                  {checkoutItems.map((item) => (
                     <div key={item.productId} className="flex justify-between">
                       <div className="flex-1">
                         <p className="font-medium">{item.productName}</p>
@@ -417,7 +423,7 @@ export default function CheckoutPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <p>Subtotal</p>
-                    <p>{formatPrice(cartTotal)}</p>
+                    <p>{formatPrice(checkoutTotal)}</p>
                   </div>
                   <div className="flex justify-between">
                     <p>Shipping</p>
@@ -425,12 +431,12 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex justify-between">
                     <p>Tax</p>
-                    <p>{formatPrice(cartTotal * 0.1)}</p>
+                    <p>{formatPrice(checkoutTotal * 0.1)}</p>
                   </div>
                   <Separator />
                   <div className="flex justify-between font-bold">
                     <p>Total</p>
-                    <p>{formatPrice(cartTotal + (cartTotal * 0.1))}</p>
+                    <p>{formatPrice(checkoutTotal + (checkoutTotal * 0.1))}</p>
                   </div>
                 </div>
                 
@@ -439,10 +445,21 @@ export default function CheckoutPage() {
                   className="w-full mt-4" 
                   size="lg" 
                   onClick={handleSubmit(onSubmit)}
-                  disabled={submitting || cartItems.length === 0}
+                  disabled={submitting || checkoutItems.length === 0}
                 >
                   {submitting ? "Processing..." : "Place Order"}
                 </Button>
+                
+                {/* If direct checkout, add a cart button */}
+                {isDirect && (
+                  <Button 
+                    variant="outline" 
+                    className="w-full mt-2"
+                    onClick={() => router.push("/cart")}
+                  >
+                    View Cart
+                  </Button>
+                )}
               </CardContent>
             </Card>
           </div>

@@ -92,8 +92,7 @@ export function CartComponent({ variant = 'icon' }: CartComponentProps) {
       return;
     }
     
-    // Remove toast notification
-    // router.push('/checkout');
+    router.push('/checkout');
   };
 
   return (
