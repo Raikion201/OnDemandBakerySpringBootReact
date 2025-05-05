@@ -3,7 +3,15 @@ import { Button } from "@/components/ui/button";
 
 export function GoogleLoginButton() {
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:8080/oauth2/authorization/google";
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || '';
+    const googleAuthUrl = process.env.NEXT_PUBLIC_GOOGLE_AUTH_URL || '/oauth2/authorization/google';
+    
+    // Construct the full URL - if API_BASE_URL is /api (for nginx), we need to use window.location.origin
+    const baseUrl = apiBaseUrl.startsWith('http') 
+      ? apiBaseUrl 
+      : `${window.location.origin}${apiBaseUrl}`;
+      
+    window.location.href = `${baseUrl}${googleAuthUrl}`;
   };
 
   return (

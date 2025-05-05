@@ -64,39 +64,45 @@ This project is containerized using Docker, making it easy to deploy to Digital 
 
 5. **Set Up Environment Files**:
    ```bash
-   # Create backend .env file
-   cat > ecspring/.env << 'EOL'
+   # Create backend .env file (use echo with single quotes to prevent variable expansion)
+   # IMPORTANT: Don't use actual credentials in your README - use placeholders
+   touch ecspring/.env
+   nano ecspring/.env
+   
+   # Add these configurations to the file (replace with your actual values)
    MYSQL_HOST=db
    MYSQL_PORT=3306
    MYSQL_DATABASE=ec
    MYSQL_USER=bakery_user
-   MYSQL_PASSWORD=secure_password
-   MYSQL_ROOT_PASSWORD=secure_root_password
+   MYSQL_PASSWORD=your_secure_password
+   MYSQL_ROOT_PASSWORD=your_secure_root_password
    
-   GOOGLE_CLIENT_ID=your_client_id
-   GOOGLE_CLIENT_SECRET=your_client_secret
+   GOOGLE_CLIENT_ID=your_google_client_id
+   GOOGLE_CLIENT_SECRET=your_google_client_secret
    
    MAIL_HOST=smtp.gmail.com
    MAIL_PORT=587
    MAIL_USERNAME=your_email@gmail.com
    MAIL_PASSWORD=your_app_password
    
+   # Generate a secure random string for JWT_SECRET
    JWT_SECRET=$(openssl rand -base64 32)
    JWT_ACCESS_EXPIRATION=3600000
    JWT_REFRESH_EXPIRATION=604800000
    
    FRONTEND_URL=https://your-domain.com
-   EOL
    
    # Create frontend .env file
-   cat > ecfront/ec-front/.env << 'EOL'
+   touch ecfront/ec-front/.env
+   nano ecfront/ec-front/.env
+   
+   # Add these configurations to the file
    NEXT_PUBLIC_API_BASE_URL=/api
    NEXT_PUBLIC_APP_URL=https://your-domain.com
-   EOL
    
-   # Edit the environment files with your actual values
-   nano ecspring/.env
-   nano ecfront/ec-front/.env
+   # Set proper permissions on .env files to restrict access
+   chmod 600 ecspring/.env
+   chmod 600 ecfront/ec-front/.env
    ```
 
 6. **Set Up Nginx Configuration**:

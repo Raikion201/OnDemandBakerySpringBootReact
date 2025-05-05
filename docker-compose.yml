@@ -48,6 +48,8 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=production
       - SERVER_SERVLET_CONTEXT_PATH=/api
+      - STORAGE_LOCATION=/app/data/uploads/products
+      - CORS_ALLOWED_ORIGINS=http://frontend:3000,https://your-domain.com
     volumes:
       - bakery-backend-data:/app/data
       - bakery-backend-logs:/app/logs
@@ -71,7 +73,10 @@ services:
       context: ./ecfront/ec-front
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_API_BASE_URL=/api  # Changed to work with nginx proxy
+        - NEXT_PUBLIC_API_BASE_URL=/api
+        - NEXT_PUBLIC_APP_URL=${FRONTEND_URL:-https://your-domain.com}
+        - NEXT_PUBLIC_GOOGLE_AUTH_URL=/oauth2/authorization/google
+        - NEXT_PUBLIC_ENABLE_ANALYTICS=false
     container_name: bakery-frontend
     restart: always
     env_file:

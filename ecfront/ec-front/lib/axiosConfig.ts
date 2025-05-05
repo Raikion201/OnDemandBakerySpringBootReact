@@ -1,7 +1,26 @@
 import axios from 'axios';
 
-// Use environment variable for base URL
-const baseURL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+// Use environment variable for base URL with more robust fallback handling
+const getBaseUrl = () => {
+  const envUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  
+  // If the URL starts with http, use it directly
+  if (envUrl?.startsWith('http')) {
+    return envUrl;
+  }
+  
+  // If it's a relative path like /api, and we're in the browser, prepend origin
+  if (envUrl && typeof window !== 'undefined') {
+    // For paths like /api when behind a reverse proxy
+    return envUrl;
+  }
+  
+  // Default fallback
+  return 'http://localhost:8080';
+};
+
+const baseURL = getBaseUrl();
+console.log('API Base URL:', baseURL);  // Helpful for debugging
 
 axios.defaults.baseURL = baseURL;
 axios.defaults.withCredentials = true;
