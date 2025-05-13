@@ -49,9 +49,17 @@ axios.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
+    // Don't trigger redirects for auth check endpoints to prevent redirect loops
+    const isAuthCheckEndpoint = originalRequest.url === '/api/auth/me';
+    
     if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
-      if (error.response?.data === "Refresh token is expired" ) {
+      if (error.response?.data === "Refresh token is expired" && !isAuthCheckEndpoint) {
         window.location.href = '/login';
+        return Promise.reject(error);
+      }
+      
+      // Don't attempt to refresh token for auth check endpoints
+      if (isAuthCheckEndpoint) {
         return Promise.reject(error);
       }
       

@@ -110,7 +110,7 @@ export const logoutAsync = createAsyncThunk(
   }
 );
 
-// Add this new thunk after the existing ones
+// Modify this thunk to handle auth check more gracefully
 export const checkAuth = createAsyncThunk(
   'auth/check',
   async (_, { rejectWithValue }) => {
@@ -124,11 +124,15 @@ export const checkAuth = createAsyncThunk(
         localStorage.setItem('user', JSON.stringify(response.data));
         return response.data;
       } else {
-        return rejectWithValue('Authentication failed');
+        // Instead of rejecting with an error, return null to indicate not authenticated
+        // This prevents triggering redirects for unauthenticated users on public pages
+        return null;
       }
     } catch (error) {
       console.error("Auth check error:", error);
-      return rejectWithValue('Not authenticated');
+      // Return null instead of rejecting the promise
+      // This prevents triggering redirects for unauthenticated users
+      return null;
     }
   }
 );
@@ -192,7 +196,7 @@ const authSlice = createSlice({
       .addCase(checkAuth.fulfilled, (state, action) => {
         state.loading = false;
         state.error = null;
-        state.user = action.payload;
+        state.user = action.payload; // Will be null if not authenticated
       })
       .addCase(checkAuth.rejected, (state) => {
         state.loading = false;

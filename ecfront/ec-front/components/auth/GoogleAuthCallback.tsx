@@ -24,7 +24,15 @@ export function GoogleAuthCallback() {
         }
 
         // If no error, assume success and fetch user data
-        await dispatch(checkAuth()).unwrap();
+        // Use unwrap() here because we specifically want to handle failure
+        const user = await dispatch(checkAuth()).unwrap();
+        
+        // Check if user is null (not authenticated)
+        if (!user) {
+          toast.error('Failed to complete authentication');
+          router.push('/login');
+          return;
+        }
         
         // Successful login - redirect to intended destination
         const redirectTo = localStorage.getItem('previousUrl') || '/';

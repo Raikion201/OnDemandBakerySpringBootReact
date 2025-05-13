@@ -66,15 +66,15 @@ export default function ProductDetailPage() {
                 quantity: quantity,
                 productName: product.name,
                 productPrice: product.price,
-                productImageUrl: product.imageUrl,
+                productImageUrl: product.imageUrl ?? undefined, // Convert null to undefined
                 maxQuantity: product.quantity
             };
             
             // Set this as the direct checkout item
             dispatch(setDirectCheckoutItem(directCheckoutItem));
             
-            // Navigate to checkout page
-            router.push("/checkout?direct=true");
+            // Navigate to checkout page without the direct parameter
+            router.push("/checkout");
         }
     };
 

@@ -13,17 +13,19 @@ export function Navbar() {
   const user = useAppSelector((state) => state.auth.user);
   const dispatch = useAppDispatch();
 
-  // Add useEffect to check authentication on component mount
+  // Update useEffect to not force redirects on auth check failures
   useEffect(() => {
     const checkUserAuth = async () => {
       try {
         // Only attempt to check auth if we're not on auth-related pages
         if (!['/login', '/sign-up', '/admin/login'].includes(pathname)) {
-          await dispatch(checkAuth()).unwrap();
+          // No need to unwrap() here - it will cause redirect on rejection
+          // Just dispatch the action and let the reducer handle the state
+          dispatch(checkAuth());
         }
       } catch (error) {
-        // User is not authenticated, but we don't need to do anything
-        console.log("User not authenticated");
+        // Don't need to do anything on error
+        console.log("Auth check completed");
       }
     };
 

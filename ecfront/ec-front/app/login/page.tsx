@@ -2,7 +2,7 @@
 
 import { LoginForm } from "@/components/login-form"
 import { useRouter } from "next/navigation"
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react" // Add Suspense import
 import Link from "next/link"
 import { useAppSelector } from "@/lib/hooks";
 
@@ -53,7 +53,9 @@ export default function LoginPage() {
       {/* Center the login form */}
       <div className="flex-1 flex items-center justify-center p-6 md:p-10">
         <div className="w-full max-w-sm">
-          <LoginForm onSubmit={onSubmit} loading={loading} />
+          <Suspense fallback={<div className="p-4 text-center">Loading login form...</div>}>
+            <LoginForm onSubmit={onSubmit} loading={loading} />
+          </Suspense>
         </div>
       </div>
     </div>
