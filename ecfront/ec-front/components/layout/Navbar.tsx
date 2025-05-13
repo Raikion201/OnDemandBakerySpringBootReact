@@ -4,13 +4,31 @@ import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { CartComponent } from "@/components/cart/CartComponent";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { logout, logoutAsync } from "@/lib/features/todos/authSlice";
+import { logout, logoutAsync, checkAuth } from "@/lib/features/todos/authSlice";
+import { useEffect } from "react";
 
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const user = useAppSelector((state) => state.auth.user);
   const dispatch = useAppDispatch();
+
+  // Add useEffect to check authentication on component mount
+  useEffect(() => {
+    const checkUserAuth = async () => {
+      try {
+        // Only attempt to check auth if we're not on auth-related pages
+        if (!['/login', '/sign-up', '/admin/login'].includes(pathname)) {
+          await dispatch(checkAuth()).unwrap();
+        }
+      } catch (error) {
+        // User is not authenticated, but we don't need to do anything
+        console.log("User not authenticated");
+      }
+    };
+
+    checkUserAuth();
+  }, [dispatch, pathname]);
 
   const handleAuthNav = (path: string) => {
     if (!['/login','/sign-up'].includes(pathname)) {

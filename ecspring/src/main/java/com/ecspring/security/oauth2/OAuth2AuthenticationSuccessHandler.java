@@ -60,7 +60,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthentication);
 
         // Redirect to frontend application
-        getRedirectStrategy().sendRedirect(request, response, "http://localhost:3000/user");
+        getRedirectStrategy().sendRedirect(request, response, "http://localhost:3000");
     }
 
 }

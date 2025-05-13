@@ -110,6 +110,29 @@ export const logoutAsync = createAsyncThunk(
   }
 );
 
+// Add this new thunk after the existing ones
+export const checkAuth = createAsyncThunk(
+  'auth/check',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get('/api/auth/me');
+      console.log("Auth check response:", response.data);
+      
+      // If we got a successful response, return the user data and store it
+      if (response.data) {
+        // Store user in localStorage
+        localStorage.setItem('user', JSON.stringify(response.data));
+        return response.data;
+      } else {
+        return rejectWithValue('Authentication failed');
+      }
+    } catch (error) {
+      console.error("Auth check error:", error);
+      return rejectWithValue('Not authenticated');
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -161,6 +184,19 @@ const authSlice = createSlice({
         // Even if the API call fails, we should still log out locally
         state.user = null;
         state.loading = false;
+      })
+      // Add these new cases for checkAuth
+      .addCase(checkAuth.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(checkAuth.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+        state.user = action.payload;
+      })
+      .addCase(checkAuth.rejected, (state) => {
+        state.loading = false;
+        state.user = null;
       });
   },
 });

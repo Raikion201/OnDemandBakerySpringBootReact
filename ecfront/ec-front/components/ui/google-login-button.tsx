@@ -1,10 +1,49 @@
 "use client";
 import { Button } from "@/components/ui/button";
+import { useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { useAppDispatch } from "@/lib/hooks";
+import { checkAuth } from "@/lib/features/todos/authSlice";
 
 export function GoogleLoginButton() {
+  const searchParams = useSearchParams();
+  const dispatch = useAppDispatch();
+  
+  // Check if we've been redirected back from Google OAuth
+  useEffect(() => {
+    const token = searchParams.get('token');
+    const error = searchParams.get('error');
+    
+    if (token) {
+      // If we have a token in the URL, we just completed OAuth login
+      // Dispatch checkAuth to fetch the user info and update state
+      dispatch(checkAuth()).unwrap()
+        .then(() => {
+          // Clear the URL parameters to avoid issues on refresh
+          window.history.replaceState({}, document.title, window.location.pathname);
+        })
+        .catch(error => {
+          console.error("Error checking auth after Google login:", error);
+        });
+    }
+    
+    if (error) {
+      console.error("Google OAuth error:", error);
+      // You could show an error toast here
+    }
+  }, [searchParams, dispatch]);
+
   const handleGoogleLogin = () => {
     const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || '';
     const googleAuthUrl = process.env.NEXT_PUBLIC_GOOGLE_AUTH_URL || '/oauth2/authorization/google';
+    
+    // Save current URL as redirect target after login
+    if (typeof window !== 'undefined') {
+      const currentPath = window.location.pathname;
+      if (!['/login', '/sign-up'].includes(currentPath)) {
+        localStorage.setItem("previousUrl", currentPath);
+      }
+    }
     
     // Construct the full URL - if API_BASE_URL is /api (for nginx), we need to use window.location.origin
     const baseUrl = apiBaseUrl.startsWith('http') 
