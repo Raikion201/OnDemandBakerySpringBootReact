@@ -19,6 +19,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Edit, Trash2, Plus, ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -56,7 +57,11 @@ export default function ProductsListPage() {
     if (productToDelete) {
       try {
         await dispatch(deleteProduct(productToDelete)).unwrap();
+        toast.success("Product deleted successfully");
       } catch (error) {
+        toast.error(
+          typeof error === "string" ? error : "Failed to delete product"
+        );
       } finally {
         setShowDeleteDialog(false);
         setProductToDelete(null);
