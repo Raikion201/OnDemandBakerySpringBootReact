@@ -70,7 +70,11 @@ public class SpringSecurity {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session -> {
+                    session.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+                    // Explicitly disable session tracking
+                    session.disable();
+                })
                 // This is the key change - return 401 status instead of redirecting
                 .exceptionHandling(exceptionHandling -> exceptionHandling
                         // For unauthenticated requests (no/invalid JWT) - 401 Unauthorized

@@ -119,21 +119,18 @@ public class JwtUtil {
     }
 
     public void setJwtCookies(HttpServletResponse response, String accessToken, String refreshToken) {
-        // Create and configure the access token cookie
-        Cookie accessCookie = new Cookie("accessToken", accessToken);
-        accessCookie.setHttpOnly(true);
-        accessCookie.setPath("/"); // The path in which the cookie is accessible (e.g. "/")
-        // Optionally set max age, secure flag, etc.
-        accessCookie.setMaxAge((int) (jwtAccessExpirationMs / 1000));
-        response.addCookie(accessCookie);
+        // For access token
+        response.addHeader("Set-Cookie", String.format(
+                "accessToken=%s; Max-Age=%d; Path=/; HttpOnly; SameSite=None; Secure",
+                accessToken,
+                (int) (jwtAccessExpirationMs / 1000)));
 
-        // Set refresh token to "" means remove the refresh token
+        // For refresh token
         if (refreshToken != null) {
-            Cookie refreshCookie = new Cookie("refreshToken", refreshToken);
-            refreshCookie.setHttpOnly(true);
-            refreshCookie.setPath("/");
-            refreshCookie.setMaxAge((int) (jwtRefreshExpirationMs / 1000));
-            response.addCookie(refreshCookie);
+            response.addHeader("Set-Cookie", String.format(
+                    "refreshToken=%s; Max-Age=%d; Path=/; HttpOnly; SameSite=None; Secure",
+                    refreshToken,
+                    (int) (jwtRefreshExpirationMs / 1000)));
         }
     }
 
