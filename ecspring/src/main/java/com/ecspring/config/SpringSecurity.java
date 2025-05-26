@@ -97,6 +97,7 @@ public class SpringSecurity {
                         .requestMatchers("/api/auth/validate-reset-token").permitAll()
                         .requestMatchers("/api/auth/reset-password").permitAll()
                         .requestMatchers("/api/products/**").permitAll()
+                        .requestMatchers("/api/orders/checkout").authenticated()
                         .anyRequest().authenticated())
                 // Configure OAuth2 login with specific paths
                 .oauth2Login(oauth2 -> oauth2

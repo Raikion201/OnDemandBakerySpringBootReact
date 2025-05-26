@@ -29,4 +29,10 @@ public interface ProductService {
     ProductEntity uploadProductImage(Long id, MultipartFile file);
 
     Page<ProductEntity> filterProducts(ProductFilterDto filterDto, Pageable pageable);
+
+    ProductEntity getProductEntityById(Long id);
+
+    ProductEntity saveProduct(ProductEntity product);
+
+    boolean isProductAvailable(Long productId, int quantity);
 }

@@ -6,10 +6,24 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 
 import java.io.File;
 
 @SpringBootApplication
+@ComponentScan(basePackages = {
+    "com.ecspring.services",
+    "com.ecspring.services.impl",
+    "com.ecspring.payment",
+    "com.ecspring.payment.impl",
+    "com.ecspring.facade",
+    "com.ecspring.controllers",
+    "com.ecspring.config",
+    "com.ecspring.security",
+    "com.ecspring.security.services",
+    "com.ecspring.security.jwt",
+    "com.ecspring.security.oauth2"
+})
 public class EcspringApplication {
 
     @Value("${storage.location:src/main/resources/static/uploads/products}")

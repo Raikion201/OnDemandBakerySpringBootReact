@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/select";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { getOrderState } from "@/lib/orderState/OrderStateFactory";
 
 interface LineItem {
   id: number;
@@ -186,55 +187,66 @@ export default function AdminOrdersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {orders.map((order) => (
-                    <TableRow key={order.id}>
-                      <TableCell className="font-medium">
-                        {order.orderNumber}
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(order.orderDate), "MMM dd, yyyy")}
-                      </TableCell>
-                      <TableCell>
-                        {order.shippingFirstName} {order.shippingLastName}
-                      </TableCell>
-                      <TableCell>${order.totalAmount.toFixed(2)}</TableCell>
-                      <TableCell>
-                        <Badge className={getStatusColor(order.status)}>
-                          {order.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{order.paymentMethod}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-col md:flex-row gap-2 justify-center">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => viewOrderDetails(order)}
-                            className="w-full md:w-[130px] h-[30px]"
-                          >
-                            View Details
-                          </Button>
-                          <Select
-                            onValueChange={(value) =>
-                              handleStatusChange(order.id, value)
-                            }
-                            defaultValue={order.status}
-                          >
-                            <SelectTrigger className="w-full md:w-[130px] h-[30px]">
-                              <SelectValue placeholder="Update Status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="PENDING">Pending</SelectItem>
-                              <SelectItem value="PROCESSING">Processing</SelectItem>
-                              <SelectItem value="SHIPPED">Shipped</SelectItem>
-                              <SelectItem value="DELIVERED">Delivered</SelectItem>
-                              <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {orders.map((order) => {
+                    const state = getOrderState(order.status);
+                    const next = state.nextStatus();
+                    const cancel = state.cancelStatus();
+
+                    return (
+                      <TableRow key={order.id}>
+                        <TableCell className="font-medium">
+                          {order.orderNumber}
+                        </TableCell>
+                        <TableCell>
+                          {format(new Date(order.orderDate), "MMM dd, yyyy")}
+                        </TableCell>
+                        <TableCell>
+                          {order.shippingFirstName} {order.shippingLastName}
+                        </TableCell>
+                        <TableCell>${order.totalAmount.toFixed(2)}</TableCell>
+                        <TableCell>
+                          <Badge className={getStatusColor(order.status)}>
+                            {order.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{order.paymentMethod}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col md:flex-row gap-2 justify-center">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => viewOrderDetails(order)}
+                              className="w-full md:w-[130px] h-[30px]"
+                            >
+                              View Details
+                            </Button>
+                            <Select
+                              onValueChange={(value) =>
+                                handleStatusChange(order.id, value)
+                              }
+                              defaultValue={order.status}
+                            >
+                              <SelectTrigger className="w-full md:w-[130px] h-[30px]">
+                                <SelectValue placeholder="Update Status" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {next && (
+                                  <SelectItem value={next}>
+                                    {next.charAt(0) + next.slice(1).toLowerCase()}
+                                  </SelectItem>
+                                )}
+                                {cancel && (
+                                  <SelectItem value={cancel}>
+                                    {cancel.charAt(0) + cancel.slice(1).toLowerCase()}
+                                  </SelectItem>
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

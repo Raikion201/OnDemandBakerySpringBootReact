@@ -2,7 +2,8 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import StoreProvider from "./StoreProvider";
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/toaster";
+
 // import { useState, useEffect } from "react";
 // import { Loader2Icon } from "lucide-react";
 
@@ -53,13 +54,7 @@ export default function RootLayout({
       >
         <StoreProvider>
           {children}
-          <Toaster
-            position="top-right"
-            richColors
-            closeButton
-            expand
-            duration={3000}
-          />
+          <Toaster />
         </StoreProvider>
       </body>
     </html>

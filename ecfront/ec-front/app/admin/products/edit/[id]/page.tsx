@@ -27,10 +27,10 @@ const productSchema = z.object({
 
 type ProductFormValues = z.infer<typeof productSchema>;
 
-export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
-  // Use await instead of React.use() to properly handle Promise params
-  const { id } = await params;
-  const productId = parseInt(id);
+export default function EditProductPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
+  // Unwrap params with React.use() to handle both Promise and direct object cases
+  const unwrappedParams = 'then' in params ? React.use(params) : params;
+  const productId = parseInt(unwrappedParams.id);
   
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -93,7 +93,6 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
       })).unwrap();
       
     } catch (error) {
-      // Remove toast notification
     } finally {
       setSubmitting(false);
     }

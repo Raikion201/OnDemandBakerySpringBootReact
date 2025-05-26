@@ -8,18 +8,18 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { 
-  ShoppingCart, 
-  X, 
-  Minus, 
-  Plus, 
+import {
+  ShoppingCart,
+  X,
+  Minus,
+  Plus,
   Trash2,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
-import { 
-  clearCart, 
-  removeItem, 
+import {
+  clearCart,
+  removeItem,
   updateItemQuantity,
   initializeCart
 } from '@/lib/features/cart/cartSlice';
@@ -32,14 +32,14 @@ interface CartComponentProps {
 export function CartComponent({ variant = 'icon' }: CartComponentProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  
+
   // Safely access cart state
   const cartState = useAppSelector((state) => state.cart);
   const items = cartState?.items || [];
   const total = cartState?.total || 0;
   const itemCount = cartState?.itemCount || 0;
   const loading = cartState?.loading || false;
-  
+
   // Load cart from localStorage when component mounts
   useEffect(() => {
     const loadCartFromLocalStorage = () => {
@@ -61,7 +61,7 @@ export function CartComponent({ variant = 'icon' }: CartComponentProps) {
       loadCartFromLocalStorage();
     }
   }, [dispatch, items.length]);
-  
+
   // Handle quantity changes
   const handleQuantityChange = (productId: number, newQuantity: number, maxQuantity: number = Infinity) => {
     if (newQuantity <= 0) {
@@ -91,7 +91,7 @@ export function CartComponent({ variant = 'icon' }: CartComponentProps) {
     if (items.length === 0) {
       return;
     }
-    
+
     router.push('/checkout');
   };
 
@@ -114,15 +114,15 @@ export function CartComponent({ variant = 'icon' }: CartComponentProps) {
           </Button>
         )}
       </SheetTrigger>
-      
+
       <SheetContent className="flex flex-col h-full">
         <SheetHeader className="border-b pb-4">
           <SheetTitle className="flex justify-between items-center">
             <span>Your Cart ({itemCount} items)</span>
             {itemCount > 0 && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={handleClearCart}
                 className="text-muted-foreground text-xs flex items-center gap-1"
                 disabled={loading}
@@ -133,8 +133,8 @@ export function CartComponent({ variant = 'icon' }: CartComponentProps) {
             )}
           </SheetTitle>
         </SheetHeader>
-        
-        <div className="flex-1 overflow-y-auto py-4">          
+
+        <div className="flex-1 overflow-y-auto py-4">
           {items.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <ShoppingCart className="h-12 w-12 text-muted-foreground mb-4" />
@@ -142,19 +142,19 @@ export function CartComponent({ variant = 'icon' }: CartComponentProps) {
               <p className="text-muted-foreground mt-1">Add some delicious items to your cart</p>
             </div>
           )}
-          
+
           {items.map((item) => (
             <div key={item.productId} className="flex gap-4 py-4 border-b">
               <div className="h-16 w-16 bg-muted rounded-md flex-shrink-0 flex items-center justify-center">
                 {item.productImageUrl ? (
-                  <img 
-                  src={
-                    item.productImageUrl.startsWith("http")
-                        ? product.imageUrl
+                  <img
+                    src={
+                      item.productImageUrl.startsWith("http")
+                        ? item.productImageUrl
                         : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/products/images/${item.productImageUrl.split('/').pop()}`
-                
+
                     }
-                    alt={item.productName || 'Product'} 
+                    alt={item.productName || 'Product'}
                     className="h-full w-full object-cover rounded-md"
                     onError={(e) => {
                       console.error("Image failed to load:", item.productImageUrl);
@@ -165,35 +165,35 @@ export function CartComponent({ variant = 'icon' }: CartComponentProps) {
                       };
                     }}
                   />
-          
+
                 ) : (
                   <div className="text-xs text-muted-foreground">No image</div>
                 )}
               </div>
-              
+
               <div className="flex-1">
                 <div className="flex justify-between">
                   <h4 className="font-medium">{item.productName || `Product #${item.productId}`}</h4>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-6 w-6" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
                     onClick={() => dispatch(removeItem(item.productId))}
                     disabled={loading}
                   >
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
-                
+
                 <div className="text-muted-foreground text-sm">
                   {formatPrice(item.productPrice || 0)}
                 </div>
-                
+
                 <div className="flex justify-between items-center mt-2">
                   <div className="flex items-center border rounded-md">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       className="h-8 w-8 rounded-none"
                       onClick={() => handleQuantityChange(item.productId, item.quantity - 1)}
                       disabled={loading}
@@ -201,9 +201,9 @@ export function CartComponent({ variant = 'icon' }: CartComponentProps) {
                       <Minus className="h-3 w-3" />
                     </Button>
                     <span className="w-8 text-center text-sm">{item.quantity}</span>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       className="h-8 w-8 rounded-none"
                       onClick={() => handleQuantityChange(item.productId, item.quantity + 1, item.maxQuantity)}
                       disabled={loading || item.quantity >= (item.maxQuantity || 0)}
@@ -211,12 +211,12 @@ export function CartComponent({ variant = 'icon' }: CartComponentProps) {
                       <Plus className="h-3 w-3" />
                     </Button>
                   </div>
-                  
+
                   <div className="font-medium">
                     {formatPrice((item.productPrice || 0) * item.quantity)}
                   </div>
                 </div>
-                
+
                 {/* Show stock availability message if needed */}
                 {item.maxQuantity && item.quantity >= item.maxQuantity && (
                   <div className="text-xs text-amber-600 mt-1">
@@ -227,15 +227,15 @@ export function CartComponent({ variant = 'icon' }: CartComponentProps) {
             </div>
           ))}
         </div>
-        
+
         <div className="border-t pt-4">
           <div className="flex justify-between py-2">
             <span>Subtotal</span>
             <span>{formatPrice(total)}</span>
           </div>
-          
-          <Button 
-            className="w-full mt-4" 
+
+          <Button
+            className="w-full mt-4"
             size="lg"
             onClick={handleCheckout}
             disabled={items.length === 0 || loading}

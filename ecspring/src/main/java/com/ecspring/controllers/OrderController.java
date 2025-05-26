@@ -5,6 +5,7 @@ import com.ecspring.dto.CheckoutRequestDto;
 import com.ecspring.exception.ResourceNotFoundException;
 import com.ecspring.security.services.UserDetailsImpl;
 import com.ecspring.services.OrderService;
+import com.ecspring.facade.CheckoutFacade;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,15 +34,26 @@ public class OrderController {
         this.orderService = orderService;
     }
 
+    @Autowired
+    private CheckoutFacade checkoutFacade;
+
     // Create order from checkout request
-    @PostMapping("/checkout")  // Keep this as "/checkout"
-    public ResponseEntity<?> createOrderFromRequest(
+    @PostMapping("/checkout")
+    public ResponseEntity<?> checkout(
             @RequestBody @Valid CheckoutRequestDto checkoutRequest,
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
         try {
-            OrderDto newOrder = orderService.createOrderFromRequest(userDetails.getUsername(), checkoutRequest);
+            // Sử dụng Facade thay vì trực tiếp gọi các services
+            OrderDto newOrder = checkoutFacade.processCheckout(
+                userDetails.getUsername(), 
+                checkoutRequest
+            );
             return new ResponseEntity<>(newOrder, HttpStatus.CREATED);
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
+            log.error("Checkout failed: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", e.getMessage()));
         }

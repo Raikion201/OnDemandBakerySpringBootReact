@@ -14,60 +14,83 @@ import java.util.List;
 @Setter
 @Getter
 @Entity
-@Table(name="orders")
+@Table(name = "orders")
 @DynamicInsert
 @DynamicUpdate
 @NoArgsConstructor
 public class OrderEntity {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
-    @Column(name="order_number", nullable=false, unique=true)
+
+    @Column(name = "order_number", nullable = false, unique = true)
     private String orderNumber;
-    
-    @Column(name="order_date", nullable=false)
+
+    @Column(name = "order_date", nullable = false)
     private LocalDateTime orderDate;
-    
-    @Column(nullable=false)
+
+    @Column(nullable = false)
     private String status;
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="user_id", nullable=false)
+    @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
-    
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<LineItemEntity> items = new ArrayList<>();
-    
+
     @OneToOne(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private InvoiceEntity invoice;
-    
-    @Column(name="payment_method", nullable=false)
+
+    @Column(name = "payment_method", nullable = false)
     private String paymentMethod;
-    
-    @Column(name="total_amount")
+
+    @Column(name = "total_amount")
     private Double totalAmount;
-    
+
     // Add shipping information including first and last name
-    @Column(name="shipping_first_name")
+    @Column(name = "shipping_first_name")
     private String shippingFirstName;
-    
-    @Column(name="shipping_last_name")
+
+    @Column(name = "shipping_last_name")
     private String shippingLastName;
-    
-    @Column(name="shipping_phone")
+
+    @Column(name = "shipping_phone")
     private String shippingPhone;
-    
-    @Column(name="shipping_address")
+
+    @Column(name = "shipping_address")
     private String shippingAddress;
-    
-    @Column(name="shipping_city")
+
+    @Column(name = "shipping_city")
     private String shippingCity;
-    
-    @Column(name="shipping_state")
+
+    @Column(name = "shipping_state")
     private String shippingState;
-    
-    @Column(name="shipping_zip_code")
+
+    @Column(name = "shipping_zip_code")
     private String shippingZipCode;
+
+    // Thêm các trường mới vào OrderEntity (nếu chưa có):
+    @Column(name = "payment_status")
+    private String paymentStatus;
+
+    @Column(name = "payment_reference")
+    private String paymentReference;
+
+    public String getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(String paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
+
+    public String getPaymentReference() {
+        return paymentReference;
+    }
+
+    public void setPaymentReference(String paymentReference) {
+        this.paymentReference = paymentReference;
+    }
 }

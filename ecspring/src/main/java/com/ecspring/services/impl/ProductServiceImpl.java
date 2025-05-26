@@ -141,4 +141,22 @@ public class ProductServiceImpl implements ProductService {
 
         return productRepository.findAll(spec, pageable);
     }
+
+    @Override
+    @Transactional
+    public ProductEntity saveProduct(ProductEntity product) {
+        return productRepository.save(product);
+    }
+
+    @Override
+    public boolean isProductAvailable(Long productId, int requestedQuantity) {
+        Optional<ProductEntity> productOpt = productRepository.findById(productId);
+        return productOpt.isPresent() && productOpt.get().getQuantity() >= requestedQuantity;
+    }
+
+    @Override
+    public ProductEntity getProductEntityById(Long id) {
+        return productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+    }
 }
