@@ -7,7 +7,7 @@
    https://console.cloud.google.com/
    ```
 
-2. **Đăng nhập** bằng Gmail: `nguyenduongoffcial@gmail.com`
+2. **Đăng nhập** bằng Gmail: 
 
 3. **Tạo Project mới:**
    - Click vào dropdown "Select a project" ở góc trên
@@ -39,13 +39,13 @@
 
 3. **App information:**
    - App name: `BakeDelights`
-   - User support email: `nguyenduongoffcial@gmail.com`
+   - User support email: 
    - App logo: (Có thể bỏ qua)
 
 4. **App domain:** (Có thể bỏ qua cho development)
 
 5. **Developer contact information:**
-   - Email: `nguyenduongoffcial@gmail.com`
+   - Email: 
 
 6. Click **"SAVE AND CONTINUE"**
 
@@ -53,7 +53,7 @@
 
 8. **Test users:**
    - Click **"ADD USERS"**
-   - Thêm email: `nguyenduongoffcial@gmail.com`
+   - Thêm email: 
    - Click **"ADD"**
    - Click **"SAVE AND CONTINUE"**
 
