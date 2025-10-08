@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import StoreProvider from "./StoreProvider";
 import { Toaster } from "sonner";
+import { Chatbot } from "@/components/chat/Chatbot";
 // import { useState, useEffect } from "react";
 // import { Loader2Icon } from "lucide-react";
 
@@ -60,6 +61,7 @@ export default function RootLayout({
             expand
             duration={3000}
           />
+          <Chatbot />
         </StoreProvider>
       </body>
     </html>

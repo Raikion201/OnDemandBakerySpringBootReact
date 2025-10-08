@@ -69,9 +69,6 @@ export function Navbar() {
             <Link href="/products" className="text-sm font-medium transition-colors hover:text-primary">
               Products
             </Link>
-            <Link href="/special-offers" className="text-sm font-medium transition-colors hover:text-primary">
-              Special Offers
-            </Link>
             <Link href="/about" className="text-sm font-medium transition-colors hover:text-primary">
               About Us
             </Link>
