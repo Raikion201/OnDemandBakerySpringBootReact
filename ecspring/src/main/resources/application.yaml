@@ -2,7 +2,7 @@ spring:
   datasource:
     url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:ec}
     username: ${MYSQL_USER:root}
-    password: ${MYSQL_PASSWORD:duong}
+    password: ${MYSQL_PASSWORD:yourpassword}
   jpa:
     database: mysql
     show-sql: true
@@ -16,8 +16,8 @@ spring:
       client:
         registration:
          google:
-          client-id: ${GOOGLE_CLIENT_ID:1086175002556-8fguuc4jbokv5ggujg7tm9ordl0ldje9.apps.googleusercontent.com}
-          client-secret: ${GOOGLE_CLIENT_SECRET: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}
+          client-id: ${GOOGLE_CLIENT_ID:your}
+          client-secret: ${GOOGLE_CLIENT_SECRET:your}
           scope:
             - email
             - profile
