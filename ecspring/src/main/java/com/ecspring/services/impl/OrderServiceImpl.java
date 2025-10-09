@@ -8,6 +8,7 @@ import com.ecspring.entity.*;
 import com.ecspring.exception.ResourceNotFoundException;
 import com.ecspring.repositories.*;
 import com.ecspring.services.OrderService;
+import com.ecspring.services.NotificationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,10 +17,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -31,6 +34,7 @@ public class OrderServiceImpl implements OrderService {
     private final LineItemRepository lineItemRepository;
     private final ProductRepository productRepository;
     private final InvoiceRepository invoiceRepository;
+    private final NotificationService notificationService;
 
     @Autowired
     public OrderServiceImpl(
@@ -39,13 +43,15 @@ public class OrderServiceImpl implements OrderService {
             CartRepository cartRepository,
             LineItemRepository lineItemRepository,
             ProductRepository productRepository,
-            InvoiceRepository invoiceRepository) {
+            InvoiceRepository invoiceRepository,
+            NotificationService notificationService) {
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
         this.cartRepository = cartRepository;
         this.lineItemRepository = lineItemRepository;
         this.productRepository = productRepository;
         this.invoiceRepository = invoiceRepository;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -113,6 +119,13 @@ public class OrderServiceImpl implements OrderService {
 
         // Clear cart
         lineItemRepository.deleteAll(cartItems);
+
+        // Send notification for order creation
+        try {
+            notificationService.sendOrderCreatedNotification(order.getOrderNumber(), userId, user.getUsername());
+        } catch (Exception e) {
+            log.error("Failed to send order creation notification for order: {}", order.getOrderNumber(), e);
+        }
 
         // Build and return OrderDto
         return mapToOrderDto(order, orderItems, totalAmount);
@@ -249,6 +262,16 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus(status);
         order = orderRepository.save(order);
         
+        // Send notification for order status update
+        try {
+            log.info("🔄 Order status updated - Order: {}, Status: {}, User: {} (ID: {})", 
+                    order.getOrderNumber(), status, order.getUser().getUsername(), order.getUser().getId());
+            notificationService.sendOrderUpdateNotification(order.getOrderNumber(), status, order.getUser().getId(), order.getUser().getUsername());
+            log.info("📤 Notification service called for order: {}", order.getOrderNumber());
+        } catch (Exception e) {
+            log.error("❌ Failed to send order update notification for order: {}", order.getOrderNumber(), e);
+        }
+        
         List<LineItemEntity> items = lineItemRepository.findByOrder(order);
         double totalAmount = calculateOrderTotal(items);
         
@@ -355,6 +378,13 @@ public class OrderServiceImpl implements OrderService {
             }
         }
         
+        // Send notification for order creation
+        try {
+            notificationService.sendOrderCreatedNotification(order.getOrderNumber(), user.getId(), user.getUsername());
+        } catch (Exception e) {
+            log.error("Failed to send order creation notification for order: {}", order.getOrderNumber(), e);
+        }
+
         // Return order DTO with the correct number of arguments
         return mapToOrderDto(order, orderItems, totalAmount);
     }
@@ -406,5 +436,133 @@ public class OrderServiceImpl implements OrderService {
         return items.stream()
                 .mapToDouble(item -> item.getProduct().getPrice() * item.getQuantity())
                 .sum();
+    }
+
+    // Analytics methods implementation
+    @Override
+    public Map<String, Object> getRevenueAnalytics() {
+        List<OrderEntity> allOrders = orderRepository.findAll();
+        
+        // Only count DELIVERED orders as actual revenue
+        List<OrderEntity> deliveredOrders = allOrders.stream()
+                .filter(order -> "DELIVERED".equals(order.getStatus()))
+                .collect(Collectors.toList());
+        
+        double totalRevenue = deliveredOrders.stream()
+                .mapToDouble(order -> {
+                    List<LineItemEntity> items = lineItemRepository.findByOrder(order);
+                    return calculateOrderTotal(items);
+                })
+                .sum();
+        
+        double averageOrderValue = deliveredOrders.isEmpty() ? 0 : totalRevenue / deliveredOrders.size();
+        
+        // Calculate revenue by status (all orders for status breakdown)
+        Map<String, Double> revenueByStatus = allOrders.stream()
+                .collect(Collectors.groupingBy(
+                        OrderEntity::getStatus,
+                        Collectors.summingDouble(order -> {
+                            List<LineItemEntity> items = lineItemRepository.findByOrder(order);
+                            return calculateOrderTotal(items);
+                        })
+                ));
+        
+        Map<String, Object> analytics = new HashMap<>();
+        analytics.put("totalRevenue", totalRevenue);
+        analytics.put("averageOrderValue", averageOrderValue);
+        analytics.put("totalOrders", allOrders.size());
+        analytics.put("deliveredOrders", deliveredOrders.size());
+        analytics.put("revenueByStatus", revenueByStatus);
+        
+        return analytics;
+    }
+
+    @Override
+    public List<Map<String, Object>> getDailyRevenue(int days) {
+        LocalDateTime endDate = LocalDateTime.now();
+        LocalDateTime startDate = endDate.minusDays(days);
+        
+        List<OrderEntity> orders = orderRepository.findByOrderDateBetween(startDate, endDate);
+        
+        // Only count DELIVERED orders as actual revenue
+        Map<LocalDateTime, Double> dailyRevenueMap = orders.stream()
+                .filter(order -> "DELIVERED".equals(order.getStatus()))
+                .collect(Collectors.groupingBy(
+                        order -> order.getOrderDate().toLocalDate().atStartOfDay(),
+                        Collectors.summingDouble(order -> {
+                            List<LineItemEntity> items = lineItemRepository.findByOrder(order);
+                            return calculateOrderTotal(items);
+                        })
+                ));
+        
+        List<Map<String, Object>> dailyRevenue = new ArrayList<>();
+        for (int i = days - 1; i >= 0; i--) {
+            LocalDateTime date = endDate.minusDays(i).toLocalDate().atStartOfDay();
+            double revenue = dailyRevenueMap.getOrDefault(date, 0.0);
+            
+            Map<String, Object> dayData = new HashMap<>();
+            dayData.put("date", date.toLocalDate().toString());
+            dayData.put("revenue", revenue);
+            dailyRevenue.add(dayData);
+        }
+        
+        return dailyRevenue;
+    }
+
+    @Override
+    public List<Map<String, Object>> getMonthlyRevenue(int months) {
+        LocalDateTime endDate = LocalDateTime.now();
+        LocalDateTime startDate = endDate.minusMonths(months);
+        
+        List<OrderEntity> orders = orderRepository.findByOrderDateBetween(startDate, endDate);
+        
+        // Only count DELIVERED orders as actual revenue
+        Map<String, Double> monthlyRevenueMap = orders.stream()
+                .filter(order -> "DELIVERED".equals(order.getStatus()))
+                .collect(Collectors.groupingBy(
+                        order -> order.getOrderDate().getYear() + "-" + 
+                                String.format("%02d", order.getOrderDate().getMonthValue()),
+                        Collectors.summingDouble(order -> {
+                            List<LineItemEntity> items = lineItemRepository.findByOrder(order);
+                            return calculateOrderTotal(items);
+                        })
+                ));
+        
+        List<Map<String, Object>> monthlyRevenue = new ArrayList<>();
+        for (int i = months - 1; i >= 0; i--) {
+            LocalDateTime date = endDate.minusMonths(i);
+            String monthKey = date.getYear() + "-" + String.format("%02d", date.getMonthValue());
+            double revenue = monthlyRevenueMap.getOrDefault(monthKey, 0.0);
+            
+            Map<String, Object> monthData = new HashMap<>();
+            monthData.put("month", monthKey);
+            monthData.put("revenue", revenue);
+            monthlyRevenue.add(monthData);
+        }
+        
+        return monthlyRevenue;
+    }
+
+    @Override
+    public Map<String, Object> getOrderStats() {
+        List<OrderEntity> allOrders = orderRepository.findAll();
+        
+        Map<String, Long> orderCountByStatus = allOrders.stream()
+                .collect(Collectors.groupingBy(
+                        OrderEntity::getStatus,
+                        Collectors.counting()
+                ));
+        
+        // Calculate conversion rate (assuming we track this)
+        long totalOrders = allOrders.size();
+        long completedOrders = orderCountByStatus.getOrDefault("DELIVERED", 0L);
+        double conversionRate = totalOrders > 0 ? (double) completedOrders / totalOrders * 100 : 0;
+        
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalOrders", totalOrders);
+        stats.put("orderCountByStatus", orderCountByStatus);
+        stats.put("conversionRate", conversionRate);
+        
+        return stats;
     }
 }

@@ -28,6 +28,11 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/auth")
@@ -186,12 +191,24 @@ public class AuthController {
         @GetMapping("/me")
         public ResponseEntity<?> getCurrentUser(@AuthenticationPrincipal UserDetailsImpl userDetails) {
                 if (userDetails != null) {
-                        // Return user information
-                        return ResponseEntity.ok(
-                                new AuthResponseDto(
-                                        userDetails.getName(),
-                                        userDetails.getUsername(),
-                                        userDetails.getEmail()));
+                        // Return user information with roles
+                        AuthResponseDto response = new AuthResponseDto(
+                                userDetails.getName(),
+                                userDetails.getUsername(),
+                                userDetails.getEmail());
+                        
+                        // Add roles to the response
+                        List<String> roles = userDetails.getAuthorities().stream()
+                                .map(authority -> authority.getAuthority())
+                                .collect(Collectors.toList());
+                        
+                        Map<String, Object> responseWithRoles = new HashMap<>();
+                        responseWithRoles.put("name", response.getName());
+                        responseWithRoles.put("username", response.getUsername());
+                        responseWithRoles.put("email", response.getEmail());
+                        responseWithRoles.put("roles", roles);
+                        
+                        return ResponseEntity.ok(responseWithRoles);
                 } else {
                         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
                 }

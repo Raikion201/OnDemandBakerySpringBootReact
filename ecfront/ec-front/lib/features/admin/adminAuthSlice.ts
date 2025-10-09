@@ -5,6 +5,7 @@ interface AdminUser {
   username: string;
   email: string;
   name: string;
+  roles?: string[];
 }
 
 interface AdminAuthState {
@@ -46,9 +47,23 @@ export const checkAdminAuth = createAsyncThunk(
       const response = await axios.get('/api/auth/me');
       console.log("Auth check response:", response.data);
       
-      // If we got a successful response, return the user data
+      // If we got a successful response, check if user has admin roles
       if (response.data) {
-        return response.data;
+        const userData = response.data;
+        const roles = userData.roles || [];
+        
+        // Check if user has admin/staff/owner role
+        const hasAdminRole = roles.some((role: string) => 
+          role === 'ROLE_ADMIN' || 
+          role === 'ROLE_STAFF' || 
+          role === 'ROLE_OWNER'
+        );
+        
+        if (!hasAdminRole) {
+          return rejectWithValue('User does not have admin privileges');
+        }
+        
+        return userData;
       } else {
         return rejectWithValue('Authentication failed');
       }
@@ -132,6 +147,7 @@ const adminAuthSlice = createSlice({
         state.loading = false;
         state.isAuthenticated = true;
         state.adminUser = action.payload;
+        state.roles = action.payload.roles || [];
         console.log("Updated admin user in state:", action.payload);
       })
       .addCase(checkAdminAuth.rejected, (state) => {

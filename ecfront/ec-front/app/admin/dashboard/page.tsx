@@ -111,6 +111,12 @@ export default function AdminDashboard() {
             >
               Manage Products
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => router.push("/admin/analytics")}
+            >
+              Analytics
+            </Button>
             <Button onClick={() => router.push("/admin/users/create")}>
               Create User
             </Button>
@@ -190,6 +196,13 @@ export default function AdminDashboard() {
                 onClick={() => router.push("/admin/orders")}
               >
                 View Orders
+              </Button>
+              <Button
+                className="w-full justify-start"
+                variant="outline"
+                onClick={() => router.push("/admin/analytics")}
+              >
+                Analytics Dashboard
               </Button>
               <Button className="w-full justify-start" variant="outline">
                 System Settings

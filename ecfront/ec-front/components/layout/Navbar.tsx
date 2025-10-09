@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { CartComponent } from "@/components/cart/CartComponent";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { logout, logoutAsync, checkAuth } from "@/lib/features/todos/authSlice";
 import { useEffect } from "react";
@@ -97,6 +98,7 @@ export function Navbar() {
               </Button>
             </Link>
             <CartComponent variant="icon" />
+            {user && <NotificationBell />}
           </div>
           <div className="flex items-center gap-4">
             { user ? (

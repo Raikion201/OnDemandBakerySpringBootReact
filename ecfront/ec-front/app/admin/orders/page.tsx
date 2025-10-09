@@ -76,6 +76,7 @@ export default function AdminOrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showOrderDetails, setShowOrderDetails] = useState(false);
   const [filter, setFilter] = useState("ALL");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
 
   useEffect(() => {
     if (filter === "ALL") {
@@ -124,28 +125,61 @@ export default function AdminOrdersPage() {
     }
   };
 
+  // Sort orders by date
+  const getSortedOrders = () => {
+    if (!orders) return [];
+    
+    return [...orders].sort((a, b) => {
+      const dateA = new Date(a.orderDate).getTime();
+      const dateB = new Date(b.orderDate).getTime();
+      
+      if (sortOrder === "newest") {
+        return dateB - dateA; // Latest first
+      } else {
+        return dateA - dateB; // Oldest first
+      }
+    });
+  };
+
   return (
     <div className="container mx-auto p-6 max-w-[1200px]">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Order Management</h1>
-        <div className="flex items-center space-x-2">
-          <span>Filter by Status:</span>
-          <Select
-            value={filter}
-            onValueChange={(value) => setFilter(value)}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All Orders</SelectItem>
-              <SelectItem value="PENDING">Pending</SelectItem>
-              <SelectItem value="PROCESSING">Processing</SelectItem>
-              <SelectItem value="SHIPPED">Shipped</SelectItem>
-              <SelectItem value="DELIVERED">Delivered</SelectItem>
-              <SelectItem value="CANCELLED">Cancelled</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <span>Filter by Status:</span>
+            <Select
+              value={filter}
+              onValueChange={(value) => setFilter(value)}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Orders</SelectItem>
+                <SelectItem value="PENDING">Pending</SelectItem>
+                <SelectItem value="PROCESSING">Processing</SelectItem>
+                <SelectItem value="SHIPPED">Shipped</SelectItem>
+                <SelectItem value="DELIVERED">Delivered</SelectItem>
+                <SelectItem value="CANCELLED">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span>Sort by Date:</span>
+            <Select
+              value={sortOrder}
+              onValueChange={(value: "newest" | "oldest") => setSortOrder(value)}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Sort by date" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest First</SelectItem>
+                <SelectItem value="oldest">Oldest First</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <Button
             variant="outline"
             onClick={() =>
@@ -186,7 +220,7 @@ export default function AdminOrdersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {orders.map((order) => (
+                  {getSortedOrders().map((order) => (
                     <TableRow key={order.id}>
                       <TableCell className="font-medium">
                         {order.orderNumber}

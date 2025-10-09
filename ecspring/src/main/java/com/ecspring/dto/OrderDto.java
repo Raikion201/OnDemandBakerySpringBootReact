@@ -2,6 +2,7 @@ package com.ecspring.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
@@ -30,4 +31,5 @@ public class OrderDto {
     private String shippingCity;
     private String shippingState;
     private String shippingZipCode;
+
 }

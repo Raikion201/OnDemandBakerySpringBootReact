@@ -4,6 +4,8 @@ import "./globals.css";
 import StoreProvider from "./StoreProvider";
 import { Toaster } from "sonner";
 import { Chatbot } from "@/components/chat/Chatbot";
+import { NotificationProvider } from "@/lib/features/notifications/NotificationProvider";
+import { ToastNotification } from "@/components/notifications/ToastNotification";
 // import { useState, useEffect } from "react";
 // import { Loader2Icon } from "lucide-react";
 
@@ -53,15 +55,18 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <StoreProvider>
-          {children}
-          <Toaster
-            position="top-right"
-            richColors
-            closeButton
-            expand
-            duration={3000}
-          />
-          <Chatbot />
+          <NotificationProvider>
+            {children}
+            <Toaster
+              position="top-right"
+              richColors
+              closeButton
+              expand
+              duration={3000}
+            />
+            <ToastNotification />
+            <Chatbot />
+          </NotificationProvider>
         </StoreProvider>
       </body>
     </html>

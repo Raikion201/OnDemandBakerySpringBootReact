@@ -119,7 +119,7 @@ public class OrderController {
             
             // Get the order to check ownership
             OrderDto order = orderService.getOrderById(id);
-            String orderUsername = userDetails.getUsername();
+            String orderUsername = order.getUserName(); // Get the order owner's username
                     
             // Check if user is admin or order owner
             boolean isAdmin = userDetails.getAuthorities().stream()
@@ -229,6 +229,61 @@ public class OrderController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error deleting order: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // Analytics endpoints for admin dashboard
+    @GetMapping("/analytics/revenue")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_STAFF','ROLE_OWNER')")
+    public ResponseEntity<?> getRevenueAnalytics() {
+        try {
+            Map<String, Object> analytics = orderService.getRevenueAnalytics();
+            return ResponseEntity.ok(analytics);
+        } catch (Exception e) {
+            log.error("Error fetching revenue analytics: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/analytics/daily-revenue")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_STAFF','ROLE_OWNER')")
+    public ResponseEntity<?> getDailyRevenue(
+            @RequestParam(defaultValue = "7") int days) {
+        try {
+            List<Map<String, Object>> dailyRevenue = orderService.getDailyRevenue(days);
+            return ResponseEntity.ok(dailyRevenue);
+        } catch (Exception e) {
+            log.error("Error fetching daily revenue: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/analytics/monthly-revenue")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_STAFF','ROLE_OWNER')")
+    public ResponseEntity<?> getMonthlyRevenue(
+            @RequestParam(defaultValue = "12") int months) {
+        try {
+            List<Map<String, Object>> monthlyRevenue = orderService.getMonthlyRevenue(months);
+            return ResponseEntity.ok(monthlyRevenue);
+        } catch (Exception e) {
+            log.error("Error fetching monthly revenue: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/analytics/order-stats")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_STAFF','ROLE_OWNER')")
+    public ResponseEntity<?> getOrderStats() {
+        try {
+            Map<String, Object> stats = orderService.getOrderStats();
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            log.error("Error fetching order stats: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", e.getMessage()));
         }

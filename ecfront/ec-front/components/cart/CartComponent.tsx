@@ -23,13 +23,14 @@ import {
   updateItemQuantity,
   initializeCart
 } from '@/lib/features/cart/cartSlice';
-import { useEffect } from 'react';
+import { useState,useEffect } from 'react';
 
 interface CartComponentProps {
   variant?: 'icon' | 'button';
 }
 
 export function CartComponent({ variant = 'icon' }: CartComponentProps) {
+  const [isClient, setIsClient] = useState(false);
   const router = useRouter();
   const dispatch = useAppDispatch();
   
@@ -42,6 +43,7 @@ export function CartComponent({ variant = 'icon' }: CartComponentProps) {
   
   // Load cart from localStorage when component mounts
   useEffect(() => {
+    setIsClient(true);
     const loadCartFromLocalStorage = () => {
       try {
         const savedCart = localStorage.getItem('cart');
@@ -62,6 +64,15 @@ export function CartComponent({ variant = 'icon' }: CartComponentProps) {
     }
   }, [dispatch, items.length]);
   
+  const renderCartBadge = () => {
+    if (!isClient) return null;
+    
+    return itemCount > 0 ? (
+      <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
+        {itemCount}
+      </span>
+    ) : null;
+  };
   // Handle quantity changes
   const handleQuantityChange = (productId: number, newQuantity: number, maxQuantity: number = Infinity) => {
     if (newQuantity <= 0) {
@@ -101,11 +112,7 @@ export function CartComponent({ variant = 'icon' }: CartComponentProps) {
         {variant === 'icon' ? (
           <Button variant="ghost" size="icon" className="relative">
             <ShoppingCart className="h-5 w-5" />
-            {itemCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {itemCount}
-              </span>
-            )}
+             {renderCartBadge()}
           </Button>
         ) : (
           <Button className="flex items-center gap-2">

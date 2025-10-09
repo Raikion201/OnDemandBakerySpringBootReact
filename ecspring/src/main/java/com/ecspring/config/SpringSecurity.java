@@ -98,6 +98,11 @@ public class SpringSecurity {
                         .requestMatchers("/api/auth/reset-password").permitAll()
                         .requestMatchers("/api/products/**").permitAll()
                         .requestMatchers("/api/chat/**").permitAll()
+                        .requestMatchers("/api/notifications/status").permitAll()
+                        .requestMatchers("/api/notifications/test").permitAll()
+                        .requestMatchers("/api/notifications/test-created").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
+                        .requestMatchers("/topic/**").permitAll()
                         .anyRequest().authenticated())
                 // Configure OAuth2 login with specific paths
                 .oauth2Login(oauth2 -> oauth2

@@ -6,6 +6,8 @@ import adminAuthReducer from './features/admin/adminAuthSlice';
 import productReducer from './features/products/productSlice';
 import cartReducer from './features/cart/cartSlice';
 import orderReducer from './features/orders/orderSlice';
+import notificationReducer from './features/notifications/notificationSlice';
+import analyticsReducer from './features/analytics/analyticsSlice';
 
 export const makeStore = () => {
   return configureStore({
@@ -16,6 +18,8 @@ export const makeStore = () => {
       products: productReducer,
       cart: cartReducer,
       orders: orderReducer,
+      notifications: notificationReducer,
+      analytics: analyticsReducer,
     },
   });
 };

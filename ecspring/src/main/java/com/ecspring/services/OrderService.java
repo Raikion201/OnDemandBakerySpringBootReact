@@ -5,6 +5,7 @@ import com.ecspring.dto.CheckoutRequestDto;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 public interface OrderService {
     OrderDto createOrderFromCart(Long userId);
@@ -23,4 +24,10 @@ public interface OrderService {
     // Add these new methods that work with username
     List<OrderDto> getOrdersByUsername(String username);
     List<OrderDto> getOrdersByUsernameAndStatus(String username, String status);
+    
+    // Analytics methods
+    Map<String, Object> getRevenueAnalytics();
+    List<Map<String, Object>> getDailyRevenue(int days);
+    List<Map<String, Object>> getMonthlyRevenue(int months);
+    Map<String, Object> getOrderStats();
 }
