@@ -1,137 +1,64 @@
-version: '3.8'
-
 services:
   db:
     image: mysql:8.0
-    container_name: bakery-db
-    restart: always
-    env_file:
-      - ./ecspring/.env
+    container_name: ec-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ec
+      MYSQL_USER: trieu
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-trieu123}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-trieu123}
     ports:
-      - "127.0.0.1:3306:3306"  # Only expose to localhost for security
+      - "3307:3306"
     volumes:
-      - bakery-mysql-data:/var/lib/mysql
-      - ./mysql/init:/docker-entrypoint-initdb.d  # For initialization scripts
-      - ./mysql/conf:/etc/mysql/conf.d  # For custom MySQL configurations
+      - db_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u${MYSQL_USER}", "-p${MYSQL_PASSWORD}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
-      retries: 5
-    networks:
-      - bakery-network
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-        reservations:
-          memory: 512M
+      retries: 10
 
   backend:
-    build: 
+    build:
       context: ./ecspring
       dockerfile: Dockerfile
-    container_name: bakery-backend
-    restart: always
+    container_name: ec-backend
+    restart: unless-stopped
     env_file:
-      - ./ecspring/.env
+      - ecspring/.env
+    environment:
+      SPRING_PROFILES_ACTIVE: production
+      MYSQL_HOST: db
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ec
+      MYSQL_USER: trieu
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-trieu123}
+      MYSQL_ROOT_PASSWORD: trieu123
+      STORAGE_LOCATION: /app/uploads
+      FRONTEND_URL: http://localhost:3000
+      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://frontend:3000
     ports:
-      - "127.0.0.1:8080:8080"  # Only expose to localhost for security
+      - "8080:8080"
     depends_on:
       db:
         condition: service_healthy
-    environment:
-      - SPRING_PROFILES_ACTIVE=production
-      - SERVER_SERVLET_CONTEXT_PATH=/api
-      - STORAGE_LOCATION=/app/data/uploads/products
-      - CORS_ALLOWED_ORIGINS=http://frontend:3000,https://your-domain.com
     volumes:
-      - bakery-backend-data:/app/data
-      - bakery-backend-logs:/app/logs
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/api/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-    networks:
-      - bakery-network
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-        reservations:
-          memory: 512M
+      - ./uploads:/app/uploads
 
   frontend:
     build:
       context: ./ecfront/ec-front
       dockerfile: Dockerfile
-      args:
-        - NEXT_PUBLIC_API_BASE_URL=/api
-        - NEXT_PUBLIC_APP_URL=${FRONTEND_URL:-https://your-domain.com}
-        - NEXT_PUBLIC_GOOGLE_AUTH_URL=/oauth2/authorization/google
-        - NEXT_PUBLIC_ENABLE_ANALYTICS=false
-    container_name: bakery-frontend
-    restart: always
-    env_file:
-      - ./ecfront/ec-front/.env
+    container_name: ec-frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8080
     ports:
-      - "127.0.0.1:3000:3000"  # Only expose to localhost for security
+      - "3000:3000"
     depends_on:
       - backend
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - bakery-network
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-        reservations:
-          memory: 256M
-
-  nginx:
-    image: nginx:1.25-alpine
-    container_name: bakery-nginx
-    restart: always
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/conf:/etc/nginx/conf.d
-      - ./nginx/ssl:/etc/nginx/ssl
-      - ./nginx/logs:/var/log/nginx
-      - ./certbot/www:/var/www/certbot
-      - ./certbot/conf:/etc/letsencrypt
-    depends_on:
-      - frontend
-      - backend
-    networks:
-      - bakery-network
-
-  certbot:
-    image: certbot/certbot
-    container_name: bakery-certbot
-    volumes:
-      - ./certbot/www:/var/www/certbot
-      - ./certbot/conf:/etc/letsencrypt
-    depends_on:
-      - nginx
-    command: renew
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
-
-networks:
-  bakery-network:
-    driver: bridge
 
 volumes:
-  bakery-mysql-data:
-    driver: local
-  bakery-backend-data:
-    driver: local
-  bakery-backend-logs:
-    driver: local
+  db_data:
+
+
