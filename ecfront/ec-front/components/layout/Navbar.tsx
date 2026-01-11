@@ -46,16 +46,31 @@ export function Navbar() {
       // Call the logout API endpoint through the async thunk
       await dispatch(logoutAsync()).unwrap();
       
-      // Manually update auth state (optional, as the thunk will do this too)
+      // Manually update auth state
       dispatch(logout());
       
-      // Stay on the current page instead of redirecting to login
-      // Just refresh the component state to show logged-out UI
-      // No need to reload or navigate away
+      // Force delete ALL auth cookies from frontend
+      document.cookie = 'accessToken=; Max-Age=0; path=/;';
+      document.cookie = 'refreshToken=; Max-Age=0; path=/;';
+      document.cookie = 'JSESSIONID=; Max-Age=0; path=/;'; // Spring Security session
+      
+      // Small delay to ensure cookies are cleared before reload
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 100);
     } catch (error) {
       console.error('Error logging out:', error);
       // Still logout locally even if API fails
       dispatch(logout());
+      
+      // Force delete all cookies even on error
+      document.cookie = 'accessToken=; Max-Age=0; path=/;';
+      document.cookie = 'refreshToken=; Max-Age=0; path=/;';
+      document.cookie = 'JSESSIONID=; Max-Age=0; path=/;';
+      
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 100);
     }
   };
 
@@ -105,7 +120,7 @@ export function Navbar() {
               <div className="relative inline-block group">
                 <span className="cursor-pointer">Welcome, {user.name || user.username}</span>
                 <div className="absolute left-0 mt-2 w-48 bg-card text-card-foreground border rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                  <a href="#" className="block px-4 py-2 hover:bg-muted/50">Manage Account</a>
+                  <Link href="/profile" className="block px-4 py-2 hover:bg-muted/50">Manage Account</Link>
                   <Link href="/my-orders" className="block px-4 py-2 hover:bg-muted/50">Manage Orders</Link>
                   {/* replace link with button to invoke logout */}
                   <button

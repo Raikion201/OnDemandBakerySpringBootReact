@@ -164,16 +164,29 @@ public class AuthController {
                 return ResponseEntity.ok().body("Access token removed");
         }
 
-        @PostMapping("/logout")
-        public ResponseEntity<?> logout(HttpServletResponse response) {
-                // Remove access token cookie by passing "" as the value
-                jwtUtil.setJwtCookies(response, null, "");
+	@PostMapping("/logout")
+	public ResponseEntity<?> logout(HttpServletResponse response, HttpServletRequest request) {
+		// Properly delete cookies by setting Max-Age to 0
+		// Must match the same SameSite/Secure settings used when setting the cookies
+		response.addHeader("Set-Cookie", 
+			"accessToken=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax");
+		response.addHeader("Set-Cookie", 
+			"refreshToken=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax");
+		
+		// Also delete JSESSIONID cookie (created by OAuth2/Spring Security)
+		response.addHeader("Set-Cookie", 
+			"JSESSIONID=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax");
 
-                // Clear security context
-                SecurityContextHolder.clearContext();
+		// Invalidate HTTP session if it exists
+		if (request.getSession(false) != null) {
+			request.getSession().invalidate();
+		}
 
-                return ResponseEntity.ok().body("Logged out successfully");
-        }
+		// Clear security context
+		SecurityContextHolder.clearContext();
+
+		return ResponseEntity.ok().body("Logged out successfully");
+	}
 
         @PostMapping("/forgot-password")
         public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequestDto requestDto) {

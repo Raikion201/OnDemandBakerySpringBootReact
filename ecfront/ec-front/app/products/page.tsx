@@ -27,7 +27,7 @@ export default function ProductsPage() {
     const [currentPage, setCurrentPage] = useState(0);
     const [filters, setFilters] = useState<ProductFilterParams>({});
 
-    const pageSize = 8;
+    const pageSize = 9;
 
     useEffect(() => {
         // Fetch initial products

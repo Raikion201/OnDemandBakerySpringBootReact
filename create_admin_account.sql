@@ -21,12 +21,12 @@ INSERT IGNORE INTO roles (name) VALUES ('ROLE_OWNER');
 INSERT INTO users (name, username, email, password) 
 VALUES (
     'Administrator',
-    'admin',
+    'admintest',
     'admin@bakedelights.com',
-    '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy'
+    '$2a$10$Qz.jkNjcqoBdseEDlZ.EXOO4B6lQ7B9LikP1F.Jhz16BxZ0uP9Rgi'
 ) ON DUPLICATE KEY UPDATE
     name = 'Administrator',
-    password = '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy';
+    password = '$2a$10$Qz.jkNjcqoBdseEDlZ.EXOO4B6lQ7B9LikP1F.Jhz16BxZ0uP9Rgi';
 
 -- Lưu ID của user admin
 SET @admin_user_id = (SELECT id FROM users WHERE username = 'admin');

@@ -72,9 +72,22 @@ export default function AdminDashboard() {
   const handleLogout = async () => {
     try {
       await dispatch(adminLogout()).unwrap();
+      
+      // Force delete ALL auth cookies from frontend
+      document.cookie = 'accessToken=; Max-Age=0; path=/;';
+      document.cookie = 'refreshToken=; Max-Age=0; path=/;';
+      document.cookie = 'JSESSIONID=; Max-Age=0; path=/;'; // Spring Security session
+      
       router.push("/admin/login");
     } catch (error) {
       console.error("Failed to logout: ", error);
+      
+      // Force delete cookies even on error
+      document.cookie = 'accessToken=; Max-Age=0; path=/;';
+      document.cookie = 'refreshToken=; Max-Age=0; path=/;';
+      document.cookie = 'JSESSIONID=; Max-Age=0; path=/;';
+      
+      router.push("/admin/login");
     }
   };
 

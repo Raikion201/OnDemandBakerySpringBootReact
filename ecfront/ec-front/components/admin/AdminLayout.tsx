@@ -51,10 +51,23 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const handleLogout = async () => {
     try {
       await logout();
+      
+      // Force delete ALL auth cookies from frontend
+      document.cookie = 'accessToken=; Max-Age=0; path=/;';
+      document.cookie = 'refreshToken=; Max-Age=0; path=/;';
+      document.cookie = 'JSESSIONID=; Max-Age=0; path=/;'; // Spring Security session
+      
       router.push("/admin/login");
       toast.success("Logged out successfully");
     } catch (error) {
       toast.error("Failed to log out");
+      
+      // Force delete cookies even on error
+      document.cookie = 'accessToken=; Max-Age=0; path=/;';
+      document.cookie = 'refreshToken=; Max-Age=0; path=/;';
+      document.cookie = 'JSESSIONID=; Max-Age=0; path=/;';
+      
+      router.push("/admin/login");
     }
   };
 

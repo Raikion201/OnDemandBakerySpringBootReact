@@ -71,9 +71,10 @@ public class SpringSecurity {
         http.cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> {
-                    session.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
-                    // Explicitly disable session tracking
-                    session.disable();
+                    // Use STATELESS for REST API, but allow sessions for WebSocket
+                    // WebSocket/STOMP needs sessions to maintain connections
+                    session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED);
+                    session.sessionFixation().changeSessionId();
                 })
                 // This is the key change - return 401 status instead of redirecting
                 .exceptionHandling(exceptionHandling -> exceptionHandling

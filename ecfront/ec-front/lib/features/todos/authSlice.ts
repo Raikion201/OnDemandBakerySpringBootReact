@@ -3,24 +3,11 @@ import axios from '@/lib/axiosConfig'; // Adjust the path to your axios configur
 import { AuthResponse, AuthState } from '@/types/auth';
 import { RootState } from '@/lib/store';
 
-// Load user from localStorage if available
-const loadUserFromStorage = (): any => {
-  if (typeof window !== 'undefined') {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        return JSON.parse(storedUser);
-      } catch (error) {
-        console.error('Failed to parse user from localStorage:', error);
-        return null;
-      }
-    }
-  }
-  return null;
-};
-
+// Don't load user from localStorage on app init
+// Instead, rely on checkAuth() to verify authentication with the server
+// This prevents stale data from localStorage after logout
 const initialState: AuthState = {
-  user: loadUserFromStorage(),
+  user: null,
   loading: false,
   error: null
 };
@@ -124,14 +111,20 @@ export const checkAuth = createAsyncThunk(
         localStorage.setItem('user', JSON.stringify(response.data));
         return response.data;
       } else {
-        // Instead of rejecting with an error, return null to indicate not authenticated
-        // This prevents triggering redirects for unauthenticated users on public pages
+        // Clear localStorage if no user data
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('user');
+          localStorage.removeItem('adminUser');
+        }
         return null;
       }
     } catch (error) {
       console.error("Auth check error:", error);
-      // Return null instead of rejecting the promise
-      // This prevents triggering redirects for unauthenticated users
+      // Clear localStorage on auth check failure
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('user');
+        localStorage.removeItem('adminUser');
+      }
       return null;
     }
   }

@@ -85,12 +85,7 @@ export function ProductCard({ product }: ProductCardProps) {
         <CardContent className="p-4">
           <div className="flex justify-between items-start mb-2">
             <h3 className="font-semibold line-clamp-1">{product.name}</h3>
-            {product.avgRating && (
-              <div className="flex items-center text-sm">
-                <Star className="h-4 w-4 fill-primary text-primary" />
-                <span>{product.avgRating.toFixed(1)}</span>
-              </div>
-            )}
+            
           </div>
           <div className="flex justify-between items-center mt-2">
             <div className="font-bold">${product.price.toFixed(2)}</div>

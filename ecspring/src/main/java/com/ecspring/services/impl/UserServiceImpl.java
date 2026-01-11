@@ -2,6 +2,8 @@ package com.ecspring.services.impl;
 
 import com.ecspring.dto.CreateUserDto;
 import com.ecspring.dto.RegisterDto;
+import com.ecspring.dto.UpdateProfileDto;
+import com.ecspring.dto.UserProfileDto;
 import com.ecspring.entity.RoleEntity;
 import com.ecspring.entity.UserEntity;
 import com.ecspring.repositories.RoleRepository;
@@ -113,5 +115,54 @@ public class UserServiceImpl implements UserService {
             return role.getUsers();
         }
         return new ArrayList<>();
+    }
+
+    @Override
+    public UserProfileDto getUserProfile(String username) {
+        UserEntity user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
+        return new UserProfileDto(user.getUsername(), user.getName(), user.getEmail());
+    }
+
+    @Transactional
+    @Override
+    public UserProfileDto updateUserProfile(String username, UpdateProfileDto updateProfileDto) {
+        UserEntity user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
+
+        // Check if email is being changed and if it already exists
+        if (!user.getEmail().equals(updateProfileDto.getEmail())) {
+            if (userRepository.existsByEmail(updateProfileDto.getEmail())) {
+                throw new RuntimeException("Email already exists");
+            }
+        }
+
+        user.setName(updateProfileDto.getName());
+        user.setEmail(updateProfileDto.getEmail());
+        userRepository.save(user);
+
+        return new UserProfileDto(user.getUsername(), user.getName(), user.getEmail());
+    }
+
+    @Transactional
+    @Override
+    public void changePassword(String username, String currentPassword, String newPassword) {
+        UserEntity user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
+
+        // Verify current password
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new RuntimeException("Current password is incorrect");
+        }
+
+        // Update to new password
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
     }
 }

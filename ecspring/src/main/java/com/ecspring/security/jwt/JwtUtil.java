@@ -120,15 +120,17 @@ public class JwtUtil {
 
     public void setJwtCookies(HttpServletResponse response, String accessToken, String refreshToken) {
         // For access token
+        // Note: Using SameSite=Lax without Secure flag for localhost HTTP development
+        // For production HTTPS, use: SameSite=None; Secure
         response.addHeader("Set-Cookie", String.format(
-                "accessToken=%s; Max-Age=%d; Path=/; HttpOnly; SameSite=None; Secure",
+                "accessToken=%s; Max-Age=%d; Path=/; HttpOnly; SameSite=Lax",
                 accessToken,
                 (int) (jwtAccessExpirationMs / 1000)));
 
         // For refresh token
         if (refreshToken != null) {
             response.addHeader("Set-Cookie", String.format(
-                    "refreshToken=%s; Max-Age=%d; Path=/; HttpOnly; SameSite=None; Secure",
+                    "refreshToken=%s; Max-Age=%d; Path=/; HttpOnly; SameSite=Lax",
                     refreshToken,
                     (int) (jwtRefreshExpirationMs / 1000)));
         }
